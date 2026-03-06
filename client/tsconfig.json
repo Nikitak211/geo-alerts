@@ -1,0 +1,38 @@
+{
+  // See https://www.typescriptlang.org/tsconfig to better understand tsconfigs
+  "compilerOptions": {
+    /* Basic Options */
+    "module": "esnext", // Specify ECMAScript target version
+    "lib": ["dom", "esnext"],
+    "incremental": true, // Enable incremental compilation
+    "importHelpers": true, // Import helper functions from the tslib module
+    "declaration": true, // Generate .d.ts files for every TypeScript or JavaScript file inside your project
+    "declarationMap": true, // Generates a source map for .d.ts files which map back to the original .ts source file.
+    "sourceMap": true, // Enables the generation of sourcemap files
+    "outDir": "dist", // Directory where the js files are emitted
+    "resolveJsonModule": true,
+    /* Strict Type-Checking Options */
+    "strict": true, // Enable all strict type-checking options.
+    "alwaysStrict": true, // Parse in strict mode and emit "use strict" for each source file.
+    "noImplicitAny": true, // Raise error on expressions and declarations with an implied 'any' type.
+    "strictFunctionTypes": true, // Enable strict checking of function types.
+    "strictBindCallApply": true, // Enable strict 'bind', 'call', and 'apply' methods on functions.
+    "strictPropertyInitialization": true, // Enable strict checking of property initialization in classes.
+    "noImplicitThis": true, // Raise error on 'this' expressions with an implied 'any' type.
+    /* Additional Checks */
+    "noUnusedLocals": true, // Report errors on unused locals.
+    "noUnusedParameters": true, // Report errors on unused parameters.
+    "noImplicitReturns": true, // Report error when not all code paths in function return a value.
+    "noFallthroughCasesInSwitch": true, // Report errors for fallthrough cases in switch statement.
+    // "noUncheckedIndexedAccess": true, // Include 'undefined' in index signature results.
+    "forceConsistentCasingInFileNames": true, // Issue an error if a program tries to include a file by a casing different from the casing on disk
+    /* Module Resolution Options */
+    "moduleResolution": "node", // Specify module resolution strategy: 'node' (Node.js) or 'classic' (TypeScript pre-1.6).
+    "esModuleInterop": true, // Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports
+    /* Additional Arguments */
+    "jsx": "react-jsx", // Emit .js files with the JSX changed to _jsx calls
+    "skipLibCheck": true // Skip type checking of declaration files.
+  },
+  "include": ["src1"],
+  "exclude": ["node_modules", "dist"]
+}
