@@ -1,4 +1,19 @@
-const API_BASE = "http://localhost:8090";
+const API_BASE =
+  (typeof process !== "undefined" && (process as any).env?.REACT_APP_API_BASE) ||
+  "http://localhost:8090";
+
+/** WebSocket URL for alerts. Uses REACT_APP_WS_URL or derives from current host. */
+export function getWsUrl(): string {
+  const env = typeof process !== "undefined" && (process as any).env;
+  if (env?.REACT_APP_WS_URL) return env.REACT_APP_WS_URL;
+  if (typeof window === "undefined") return "ws://localhost:8080";
+  const { protocol, hostname, port } = window.location;
+  const wsProto = protocol === "https:" ? "wss:" : "ws:";
+  // Dev: client on 3000, WS server on 8080
+  const wsPort =
+    hostname === "localhost" && (port === "3000" || !port) ? "8080" : port || (protocol === "https:" ? "443" : "80");
+  return `${wsProto}//${hostname}:${wsPort}`;
+}
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const userId = localStorage.getItem("userId");

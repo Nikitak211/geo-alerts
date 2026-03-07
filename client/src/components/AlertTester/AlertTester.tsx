@@ -4,10 +4,11 @@ import type { AlertPayload, GeoBox, HighlightStore } from "../../types";
 import { normalize, toBaseMunicipalityName } from "../../utils/cityNameMatching";
 import { createSirenPlayer } from "../../utils/siren";
 import { useAlertPlaces } from "../../contexts/AlertPlacesContext";
+import { getWsUrl } from "../../utils/helper";
 import { GeoJsonProvider, useGeoJsonContext } from "../../contexts/GeoJsonContext";
 import { MunicipalityGeoJsonLayer } from "../MapLayer";
 
-const CITY_TTL_MS = 600_000;
+const CITY_TTL_MS = 600_000; // 10 min for highlights and pins
 const CITIES_URL = "/data/cities.json";
 const GEOJSON_URL = "/data/municipalities.geojson";
 
@@ -59,14 +60,16 @@ function AlertTesterContent() {
     }, ms);
   };
 
-  const playAlertSound = () => {
+  const playAlertSoundRef = useRef<() => void>(() => {});
+  const playAlertSound = useCallback(() => {
     if (!soundEnabled) return;
     const siren = sirenRef.current;
     if (!siren) return;
     siren.unlock().then(() => {
       if (sirenRef.current) sirenRef.current.playSiren();
     });
-  };
+  }, [soundEnabled]);
+  playAlertSoundRef.current = playAlertSound;
 
   const enableSound = async () => {
     if (!sirenRef.current) sirenRef.current = createSirenPlayer();
@@ -113,25 +116,46 @@ function AlertTesterContent() {
     setHighlightedNames(new Set());
   }, []);
 
+  const placesMapRef = useRef<Record<string, { title: string; expiresAt: number }>>({});
+
+  const syncPlaces = useCallback(() => {
+    const now = Date.now();
+    const map = placesMapRef.current;
+    const next: { place: string; title: string }[] = [];
+    for (const [place, v] of Object.entries(map)) {
+      if (v.expiresAt > now) next.push({ place, title: v.title });
+      else delete map[place];
+    }
+    setPlaces(next);
+  }, [setPlaces]);
+
   useEffect(() => {
-    const seen = new Set<string>();
-    const places = alerts.flatMap((a) =>
-      (a.data ?? [])
-        .map((place) => ({ place, title: a.title ?? "" }))
-        .filter(({ place }) => {
-          if (seen.has(place)) return false;
-          seen.add(place);
-          return true;
-        }),
-    );
-    setPlaces(places);
-  }, [alerts, setPlaces]);
+    const now = Date.now();
+    if (alerts.length === 0) {
+      placesMapRef.current = {};
+    } else {
+      const latest = alerts[0];
+      for (const place of latest.data ?? []) {
+        placesMapRef.current[place] = {
+          title: latest.title ?? "",
+          expiresAt: now + CITY_TTL_MS,
+        };
+      }
+    }
+    syncPlaces();
+  }, [alerts, syncPlaces]);
+
+  useEffect(() => {
+    const id = setInterval(syncPlaces, 30_000);
+    return () => clearInterval(id);
+  }, [syncPlaces]);
 
   const connect = () => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
-    const ws = new WebSocket("ws://localhost:8080");
+    const ws = new WebSocket(getWsUrl());
     wsRef.current = ws;
     ws.onopen = () => setConnected(true);
+    ws.onerror = () => setConnected(false);
     ws.onmessage = (ev) => {
       let msg: {
         type?: string;
@@ -148,7 +172,7 @@ function AlertTesterContent() {
         const withTime: AlertPayload = { ...alert, time: new Date() };
         setAlerts((prev) => [withTime, ...prev]);
         startBlink(withTime.id, 8000);
-        playAlertSound();
+        playAlertSoundRef.current();
         if (Array.isArray(withTime.data)) {
           for (const cityName of withTime.data)
             highlightCityRef.current(cityName);

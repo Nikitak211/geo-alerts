@@ -5,7 +5,7 @@ import { GenericModal } from "./components/GenericModal/GenericModal";
 import { BetDrawer } from "./components/BetDrawer/BetDrawer";
 import { BetsDrawer } from "./components/BetsDrawer/BetsDrawer";
 import { User, PaymentMethod, Bet, BetFormValues } from "./types";
-import { api } from "./utils/helper";
+import { api, getWsUrl } from "./utils/helper";
 import { isRegion, isExcludedFromBetting } from "./utils/regionAreas";
 import { MainMap } from "./components/MainMap/MainMap";
 
@@ -107,7 +107,7 @@ export const Main: FC = () => {
   }, [refreshMe, loadPaymentMethods]);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8080");
+    const ws = new WebSocket(getWsUrl());
 
     ws.onmessage = (ev) => {
       let msg: any;

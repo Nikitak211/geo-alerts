@@ -28,6 +28,8 @@ function createOrefPoller(deps) {
         resolvePlacesAndBroadcast(json.data);
       }
       const settlementResults = await processAlertPayload(json);
+      console.log("[oref] settlementResults length:", settlementResults.length);
+
       if (settlementResults.length) {
         console.log("settlementResults:", settlementResults);
       }
