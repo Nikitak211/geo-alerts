@@ -82,6 +82,9 @@ function stripPrefix(raw) {
 
 function buildLookupKeys(raw) {
   const out = new Set();
+  const rawTrimmed = String(raw).trim();
+  if (rawTrimmed) out.add(rawTrimmed);
+
   const original = normalize(raw);
   const base = normalize(toBaseMunicipalityName(raw));
   const candidates = [
@@ -234,7 +237,12 @@ function lookupFromGeoJson(place, geojsonPath) {
   if (!placeTrimmed) return null;
   const idx = loadIndex(geojsonPath);
   if (idx.size === 0) return null;
-  for (const key of buildLookupKeys(placeTrimmed)) {
+  // Prefer longer keys to avoid "נשר" (Haifa) matching "אזור תעשייה נשר - רמלה" (near Ramla)
+  const keysBySpecificity = buildLookupKeys(placeTrimmed).sort(
+    (a, b) => b.length - a.length,
+  );
+  for (const key of keysBySpecificity) {
+    if (placeTrimmed.length > 0 && key.length < placeTrimmed.length * 0.5) continue;
     const arr = idx.get(key);
     if (arr?.length) {
       const { geometry } = arr[0];

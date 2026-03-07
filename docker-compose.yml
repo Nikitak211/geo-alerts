@@ -1,7 +1,36 @@
 services:
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        # Browser will call these on the host; map server ports in docker-compose
+        REACT_APP_API_BASE: http://localhost:8090
+        REACT_APP_WS_URL: ws://localhost:5535
+    ports:
+      - "4421:80"
+    depends_on:
+      - server
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"   # HTTP API
+      - "5535:5535"   # WebSocket
+    environment:
+      PORT: 5535
+      HTTP_PORT: 8090
+      # Allow browser at client port to call API (CORS)
+      CORS_ORIGIN: http://localhost:3000
+      # Point to Postgres (use db service or host)
+      DATABASE_URL: postgres://app:app@db:5432/bets
+    depends_on:
+      - db
+
   db:
-    image: postgres:16
-    container_name: bets-postgres
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: app
@@ -9,21 +38,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - bets_pgdata:/var/lib/postgresql/data
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: bets-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@local.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    depends_on:
-      - db
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - pgdata:/var/lib/postgresql/data
 
 volumes:
-  bets_pgdata:
-  pgadmin_data:
+  pgdata:

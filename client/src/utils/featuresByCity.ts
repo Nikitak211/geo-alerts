@@ -1,6 +1,6 @@
 import type { GeoJSON } from "../types/alert";
 import type { CityRow } from "../types/place";
-import { buildLookupKeys, normalizeEnglish } from "./cityNameMatching";
+import { buildLookupKeys, normalize, normalizeEnglish } from "./cityNameMatching";
 import {
   distDegSq,
   getHebrewNameFromProps,
@@ -88,11 +88,11 @@ export function buildFeaturesByCity(
     const normEn = normalizeEnglish(nameEnglish);
     let displayName: string;
     let matched = false;
-    if (
-      name &&
+    const isNameMatched =
+      !!name &&
       (featureKeys.some((k) => cityLookupKeys.has(k)) ||
-        (normEn && cityEnglishKeys.has(normEn)))
-    ) {
+        (normEn && cityEnglishKeys.has(normEn)));
+    if (isNameMatched) {
       displayName = cityEnglishToHebrew.get(normEn) || name;
       matched = true;
     } else {
@@ -128,11 +128,32 @@ export function buildFeaturesByCity(
     if (nameHebrew) {
       buildLookupKeys(nameHebrew).forEach((k) => allKeys.add(k));
     }
-    const namesToIndex = new Set<string>([displayName]);
-    if (nameHebrew && nameHebrew !== displayName) {
-      namesToIndex.add(nameHebrew);
+    // For alert highlighting we only want name-based matches: a polygon is highlighted
+    // when its actual MUN_HEB matches an alert name. When a feature is spatially matched
+    // (assigned displayName by centroid), do NOT index it under displayName's keys —
+    // only under its actual name (nameHebrew). So getDisplayNamesForCity("קריית שמונה")
+    // won't return "מרגליות", and we won't highlight the wrong polygon.
+    const namesToIndex = new Set<string>();
+    let keysForIndex = allKeys;
+    if (isNameMatched) {
+      namesToIndex.add(displayName);
+      if (nameHebrew && nameHebrew !== displayName) {
+        namesToIndex.add(nameHebrew);
+      }
+    } else {
+      if (nameHebrew) {
+        namesToIndex.add(nameHebrew);
+        keysForIndex = new Set(buildLookupKeys(nameHebrew));
+      } else {
+        namesToIndex.add(displayName);
+        keysForIndex = new Set(buildLookupKeys(displayName));
+      }
     }
-    for (const key of allKeys) {
+    for (const key of keysForIndex) {
+      // Don't index under the normalized (geresh-stripped) form of our name when it would
+      // collapse two distinct places: e.g. ג'ת (Jatt) must not be findable by "גת", so alerts
+      // for "גת" (Gat) don't highlight Jatt.
+      if (nameHebrew && key === normalize(nameHebrew) && key !== nameHebrew) continue;
       const keyArr = placeIndexByCityKey.get(key) ?? [];
       for (const n of namesToIndex) {
         if (!keyArr.includes(n)) keyArr.push(n);

@@ -2,8 +2,10 @@
   // See https://www.typescriptlang.org/tsconfig to better understand tsconfigs
   "compilerOptions": {
     /* Basic Options */
-    "module": "esnext", // Specify ECMAScript target version
+    "module": "esnext",
+    "target": "es2017",
     "lib": ["dom", "esnext"],
+    "downlevelIteration": true,
     "incremental": true, // Enable incremental compilation
     "importHelpers": true, // Import helper functions from the tslib module
     "declaration": true, // Generate .d.ts files for every TypeScript or JavaScript file inside your project
@@ -20,8 +22,8 @@
     "strictPropertyInitialization": true, // Enable strict checking of property initialization in classes.
     "noImplicitThis": true, // Raise error on 'this' expressions with an implied 'any' type.
     /* Additional Checks */
-    "noUnusedLocals": true, // Report errors on unused locals.
-    "noUnusedParameters": true, // Report errors on unused parameters.
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noImplicitReturns": true, // Report error when not all code paths in function return a value.
     "noFallthroughCasesInSwitch": true, // Report errors for fallthrough cases in switch statement.
     // "noUncheckedIndexedAccess": true, // Include 'undefined' in index signature results.
@@ -33,6 +35,6 @@
     "jsx": "react-jsx", // Emit .js files with the JSX changed to _jsx calls
     "skipLibCheck": true // Skip type checking of declaration files.
   },
-  "include": ["src1"],
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }

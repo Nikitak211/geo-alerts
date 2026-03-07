@@ -1,0 +1,89 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "western_iran_sector",
+        "name": "Western Iran sector",
+        "type": "western_iran_sector",
+        "priority": 1
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [44, 31],
+            [49, 31],
+            [49, 36],
+            [44, 36],
+            [44, 31]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "northwest_iran_sector",
+        "name": "Northwest Iran sector",
+        "type": "northwest_iran_sector",
+        "priority": 2
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [45, 36],
+            [50, 36],
+            [50, 40],
+            [45, 40],
+            [45, 36]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "southwest_iran_sector",
+        "name": "Southwest Iran sector",
+        "type": "southwest_iran_sector",
+        "priority": 3
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [46, 28],
+            [52, 28],
+            [52, 32],
+            [46, 32],
+            [46, 28]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "central_west_support_sector",
+        "name": "Central west support sector",
+        "type": "central_west_support_sector",
+        "priority": 4
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [49, 30],
+            [55, 30],
+            [55, 35],
+            [49, 35],
+            [49, 30]
+          ]
+        ]
+      }
+    }
+  ]
+}

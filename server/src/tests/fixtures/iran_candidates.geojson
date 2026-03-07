@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "id": "west_sector", "name": "West sector", "type": "sector", "priority": 1 },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[48, 32], [52, 32], [52, 35], [48, 35], [48, 32]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "north_sector", "name": "North sector", "type": "sector", "priority": 2 },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[49, 36], [53, 36], [53, 39], [49, 39], [49, 36]]]
+      }
+    }
+  ]
+}

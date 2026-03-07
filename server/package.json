@@ -4,8 +4,14 @@
   "main": "index.js",
   "scripts": {
     "test": "node ./mock-oref-ws.js",
+    "test:unit": "npm run build && node --test dist/tests/settlements/settlementResolver.test.js dist/tests/clustering/clusterAlerts.test.js dist/tests/inference/buildReverseCorridor.test.js dist/tests/inference/rankCandidates.test.js dist/tests/inference/runInference.test.js",
+    "build": "tsc",
+    "prestart": "npm run build",
     "start": "node ./src/server.js",
-    "test:geocode": "node ./scripts/test-geocode.js"
+    "test:geocode": "node ./scripts/test-geocode.js",
+    "screenshot": "node dist/workers/screenshot/screenshotWorker.js",
+    "replay": "node dist/replay/replayRunner.js",
+    "replay:range": "node dist/replay/replayRunner.js"
   },
   "keywords": [],
   "author": "",
@@ -13,12 +19,17 @@
   "description": "",
   "dependencies": {
     "crypto": "^1.0.1",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "form-data": "^4.0.5",
     "pg": "^8.20.0",
+    "playwright": "^1.58.2",
     "ws": "^8.19.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^25.3.3",
+    "@types/pg": "^8.11.10",
     "@types/ws": "^8.18.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

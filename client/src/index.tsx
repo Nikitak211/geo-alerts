@@ -6,6 +6,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import { Main } from "./Main";
+import { MapRenderPage } from "./render";
 import { appTheme } from "./theme";
 import "./index.css";
 
@@ -20,11 +21,16 @@ const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement,
 );
 
+const isRenderPage =
+  typeof window !== "undefined" &&
+  (window.location.pathname.toLowerCase() === "/render" ||
+    /^\/render\/alert\/[^/]+/.test(window.location.pathname));
+
 root.render(
   <React.StrictMode>
     <ThemeProvider theme={appTheme}>
       <CssBaseline />
-      <Main />
+      {isRenderPage ? <MapRenderPage /> : <Main />}
     </ThemeProvider>
   </React.StrictMode>,
 );

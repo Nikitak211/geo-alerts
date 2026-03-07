@@ -56,6 +56,9 @@ export function unifyHebrewPunctuation(s: string): string {
 
 export function buildLookupKeys(raw: string): string[] {
   const out = new Set<string>();
+  const rawTrimmed = String(raw).trim();
+  if (rawTrimmed) out.add(rawTrimmed);
+
   const original = unifyHebrewPunctuation(raw);
   const base = unifyHebrewPunctuation(toBaseMunicipalityName(raw));
   const candidates = [
