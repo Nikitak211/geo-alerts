@@ -1,7 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AppBar,
+  Box,
+  Button,
+  FormControl,
+  Menu,
+  MenuItem,
+  Select,
+  TextField,
+  Toolbar,
+  Typography,
+} from "@mui/material";
 import { PaymentMethod, User } from "../../types";
 
-type MenuItem = { key: string; label: string; disabled?: boolean };
+type MenuItemType = { key: string; label: string; disabled?: boolean };
 
 export function TopToolbar(props: {
   user: User | null;
@@ -16,6 +28,7 @@ export function TopToolbar(props: {
   onOpenRegister: () => void;
   onOpenAddPaymentMethod: () => void;
   onOpenBets: () => void;
+  onOpenPlaceBet: () => void;
 
   onLoadBalance: (paymentMethodId: string) => Promise<void>;
 }) {
@@ -23,11 +36,10 @@ export function TopToolbar(props: {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(menuAnchor);
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  const menuItems: MenuItem[] = useMemo(
+  const menuItems: MenuItemType[] = useMemo(
     () => [
       { key: "bets", label: "View bets", disabled: !user },
       { key: "pay", label: "Settings: Payment method", disabled: !user },
@@ -35,186 +47,212 @@ export function TopToolbar(props: {
     [user],
   );
 
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      if (!menuRef.current) return;
-      if (menuRef.current.contains(e.target as any)) return;
-      setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, []);
+  const balanceText = useMemo(() => {
+    if (!user?.wallet) return "";
+    const avail = Number(user.wallet.availableBalance ?? 0).toFixed(2);
+    const reserved = Number(user.wallet.reservedBalance ?? 0).toFixed(2);
+    const total = Number(user.wallet.totalBalance ?? 0).toFixed(2);
+    return `Available: ${avail} · Reserved: ${reserved} · Total: ${total}`;
+  }, [user]);
 
-  const balanceText = user
-    ? `Balance: ${Number(user.balance ?? 0).toFixed(2)}`
-    : "";
+  const handleCloseMenu = () => setMenuAnchor(null);
 
   return (
-    <div
-      style={{
-        height: 56,
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "0 12px",
-        borderBottom: "1px solid #ddd",
-        background: "#22242a",
-        color: "#EAEAEAEA",
+    <AppBar
+      position="static"
+      sx={{
+        bgcolor: "#22242a",
+        color: "#EAEAEA",
+        borderBottom: "1px solid rgba(255,255,255,0.12)",
       }}
     >
-      <div style={{ fontWeight: 800 }}>Cesium Bets</div>
+      <Toolbar variant="dense" sx={{ gap: 2, minHeight: { xs: 48, sm: 56 } }}>
+        <Typography variant="h6" component="span" fontWeight={800}>
+          Cesium Bets
+        </Typography>
 
-      {user ? (
-        <div style={{ fontSize: 13, color: "#333" }}>{balanceText}</div>
-      ) : null}
+        {user && (
+          <Typography variant="body2" sx={{ color: "#EAEAEA" }}>
+            {balanceText}
+          </Typography>
+        )}
 
-      <div
-        style={{
-          marginLeft: "auto",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-        }}
-      >
+        <Box sx={{ flexGrow: 1 }} />
+
         {user ? (
           <>
-            <span style={{ fontSize: 13 }}>Logged in: {user.email}</span>
+            <Typography variant="body2" sx={{ color: "#EAEAEA" }}>
+              Logged in: {user.email}
+            </Typography>
 
-            <select
-              value={props.selectedPaymentMethodId ?? ""}
-              onChange={(e) => props.onSelectPaymentMethod(e.target.value)}
-              style={{ padding: "6px 8px" }}
-            >
-              {props.paymentMethods.length === 0 ? (
-                <option value="">No payment methods</option>
-              ) : (
-                props.paymentMethods.map((pm) => (
-                  <option key={pm.id} value={pm.id}>
-                    {pm.label}
-                  </option>
-                ))
-              )}
-            </select>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <Select
+                value={props.selectedPaymentMethodId ?? ""}
+                onChange={(e) => props.onSelectPaymentMethod(e.target.value)}
+                displayEmpty
+                sx={{
+                  color: "#EAEAEA",
+                  "& .MuiSelect-select": { color: "#EAEAEA" },
+                  ".MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(234,234,234,0.5)",
+                  },
+                  "& .MuiSvgIcon-root": { color: "#EAEAEA" },
+                }}
+              >
+                {props.paymentMethods.length === 0 ? (
+                  <MenuItem value="">
+                    <em>No payment methods</em>
+                  </MenuItem>
+                ) : (
+                  props.paymentMethods.map((pm) => (
+                    <MenuItem key={pm.id} value={pm.id}>
+                      {pm.label}
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+            </FormControl>
 
-            <button
+            <Button
+              variant="contained"
+              size="small"
               disabled={!props.selectedPaymentMethodId}
               onClick={() =>
                 props.selectedPaymentMethodId &&
                 props.onLoadBalance(props.selectedPaymentMethodId)
               }
-              style={{
-                padding: "6px 10px",
-                fontWeight: 700,
+              sx={{
+                bgcolor: "rgba(255,255,255,0.15)",
+                color: "#EAEAEA",
+                "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
               }}
             >
               Load Balance
-            </button>
+            </Button>
 
-            {/* Hamburger */}
-            <div ref={menuRef} style={{ position: "relative" }}>
-              <button
-                onClick={() => setMenuOpen((s) => !s)}
-                style={{ padding: "6px 10px" }}
-                aria-label="menu"
-              >
-                ☰
-              </button>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={props.onOpenPlaceBet}
+              sx={{
+                bgcolor: "rgba(76, 175, 80, 0.9)",
+                color: "#fff",
+                "&:hover": { bgcolor: "rgba(76, 175, 80, 1)" },
+              }}
+            >
+              Place bet
+            </Button>
 
-              {menuOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    top: "110%",
-                    width: 220,
-                    background: "white",
-                    border: "1px solid #ddd",
-                    borderRadius: 10,
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-                    padding: 6,
-                    zIndex: 9999,
+            <Button
+              id="menu-button"
+              aria-controls={menuOpen ? "toolbar-menu" : undefined}
+              aria-haspopup="true"
+              aria-expanded={menuOpen ? "true" : undefined}
+              onClick={(e) => setMenuAnchor(e.currentTarget)}
+              sx={{ color: "#EAEAEA", minWidth: 0 }}
+            >
+              ☰
+            </Button>
+            <Menu
+              id="toolbar-menu"
+              anchorEl={menuAnchor}
+              open={menuOpen}
+              onClose={handleCloseMenu}
+              MenuListProps={{ "aria-labelledby": "menu-button" }}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+              PaperProps={{
+                sx: {
+                  bgcolor: "#2d2f36",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  mt: 1.5,
+                },
+              }}
+            >
+              {menuItems.map((it) => (
+                <MenuItem
+                  key={it.key}
+                  disabled={it.disabled}
+                  onClick={() => {
+                    handleCloseMenu();
+                    if (it.key === "bets") props.onOpenBets();
+                    if (it.key === "pay") props.onOpenAddPaymentMethod();
                   }}
+                  sx={{ color: "#EAEAEA" }}
                 >
-                  {menuItems.map((it) => (
-                    <button
-                      key={it.key}
-                      disabled={it.disabled}
-                      onClick={() => {
-                        setMenuOpen(false);
-                        if (it.key === "bets") props.onOpenBets();
-                        if (it.key === "pay") props.onOpenAddPaymentMethod();
-                      }}
-                      style={{
-                        width: "100%",
-                        textAlign: "left",
-                        padding: "10px 10px",
-                        borderRadius: 8,
-                        border: "none",
-                        background: "transparent",
-                        opacity: it.disabled ? 0.5 : 1,
-                        cursor: it.disabled ? "not-allowed" : "pointer",
-                      }}
-                    >
-                      {it.label}
-                    </button>
-                  ))}
-
-                  <div
-                    style={{ height: 1, background: "#eee", margin: "6px 0" }}
-                  />
-
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      props.onLogout();
-                    }}
-                    style={{
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "10px 10px",
-                      borderRadius: 8,
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
+                  {it.label}
+                </MenuItem>
+              ))}
+              <MenuItem
+                onClick={() => {
+                  handleCloseMenu();
+                  props.onLogout();
+                }}
+                sx={{ color: "#EAEAEA" }}
+              >
+                Logout
+              </MenuItem>
+            </Menu>
           </>
         ) : (
           <>
-            <input
+            <TextField
+              size="small"
               placeholder="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              style={{ padding: "6px 8px" }}
+              sx={{
+                width: 140,
+                "& .MuiOutlinedInput-root": {
+                  color: "#EAEAEA",
+                  "& fieldset": { borderColor: "rgba(234,234,234,0.5)" },
+                },
+                "& .MuiInputLabel-root": { color: "rgba(234,234,234,0.7)" },
+              }}
+              inputProps={{ "aria-label": "email" }}
             />
-            <input
-              placeholder="password"
+            <TextField
+              size="small"
               type="password"
+              placeholder="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={{ padding: "6px 8px" }}
+              sx={{
+                width: 120,
+                "& .MuiOutlinedInput-root": {
+                  color: "#EAEAEA",
+                  "& fieldset": { borderColor: "rgba(234,234,234,0.5)" },
+                },
+              }}
+              inputProps={{ "aria-label": "password" }}
             />
-            <button
+            <Button
+              variant="contained"
+              size="small"
               onClick={() => props.onLogin(email, password)}
-              style={{ padding: "6px 10px" }}
+              sx={{
+                bgcolor: "rgba(255,255,255,0.15)",
+                color: "#EAEAEA",
+                "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
+              }}
             >
               Login
-            </button>
-
-            <button
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
               onClick={() => props.onOpenRegister()}
-              style={{ padding: "6px 10px" }}
+              sx={{
+                borderColor: "rgba(234,234,234,0.5)",
+                color: "#EAEAEA",
+                "&:hover": { borderColor: "#EAEAEA", bgcolor: "rgba(255,255,255,0.08)" },
+              }}
             >
               Register
-            </button>
+            </Button>
           </>
         )}
-      </div>
-    </div>
+      </Toolbar>
+    </AppBar>
   );
 }

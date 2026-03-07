@@ -1,3 +1,7 @@
+export type { PlaceData, CityRow } from "./place";
+export type { AlertPayload, HighlightStore } from "./alert";
+export type { AlertPayload, HighlightStore } from "./alert";
+
 export type OrefAlert = {
   id: string;
   cat: string;
@@ -23,11 +27,22 @@ export type BetFormValues = {
   date: string; // YYYY-MM-DD
   predictedTime: string; // "HH:MM"
   amount: number;
+  allowMinuteProximity?: boolean;
+  /** Selected area (Hebrew name from map or dropdown). */
+  areaHeb?: string;
+  /** @deprecated Use areaHeb. Kept for compatibility. */
+  name?: string;
 };
+export type Wallet = {
+  availableBalance: number;
+  reservedBalance: number;
+  totalBalance: number;
+};
+
 export type User = {
   id: string;
   email: string;
-  balance: number;
+  wallet: Wallet;
 };
 
 export type PaymentMethod = {
@@ -46,4 +61,6 @@ export type Bet = {
   payout_amount?: number;
   placed_at?: string | null;
   settled_alert_time?: string | null;
+  allow_minute_proximity?: boolean;
+  is_region?: boolean;
 };

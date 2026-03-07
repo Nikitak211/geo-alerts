@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "npx ts-node ./mock-oref-ws.js",
-    "start": "npx ts-node ./src/oref-ws-server.js"
+    "test": "node ./mock-oref-ws.js",
+    "start": "node ./src/server.js",
+    "test:geocode": "node ./scripts/test-geocode.js"
   },
   "keywords": [],
   "author": "",

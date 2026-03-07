@@ -1,4 +1,15 @@
 import React, { useMemo, useState } from "react";
+import {
+  Box,
+  Button,
+  Drawer,
+  IconButton,
+  Paper,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+  Chip,
+} from "@mui/material";
 import type { Bet, BetStatus } from "../../types";
 
 const TABS: { key: BetStatus | "all"; label: string }[] = [
@@ -13,7 +24,6 @@ const formatBetDate = (value: string | Date) => {
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
     return value.slice(0, 10);
   }
-
   const year = value.getFullYear();
   const month = String(value.getMonth() + 1).padStart(2, "0");
   const day = String(value.getDate()).padStart(2, "0");
@@ -39,6 +49,21 @@ const normalizeStatus = (status: string): BetStatus | "void" => {
   return "open";
 };
 
+const statusColor = (
+  status: string
+): "default" | "primary" | "success" | "error" | "warning" => {
+  switch (status) {
+    case "won":
+      return "success";
+    case "lost":
+      return "error";
+    case "open":
+      return "primary";
+    default:
+      return "default";
+  }
+};
+
 export function BetsDrawer(props: {
   open: boolean;
   bets: Bet[] | null | undefined;
@@ -57,64 +82,81 @@ export function BetsDrawer(props: {
     return safeBets.filter((b) => normalizeStatus(String(b.status)) === tab);
   }, [safeBets, tab]);
 
-  if (!props.open) return null;
-
   return (
-    <div
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) props.onClose();
+    <Drawer
+      anchor="right"
+      open={props.open}
+      onClose={props.onClose}
+      slotProps={{
+        backdrop: {
+          sx: { backgroundColor: "rgba(0,0,0,0.4)" },
+        },
       }}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.25)",
-        zIndex: 9998,
+      PaperProps={{
+        sx: {
+          width: { xs: "92vw", sm: 420 },
+          maxWidth: 420,
+          bgcolor: "#22242a",
+        },
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          right: 0,
-          top: 0,
+      <Box
+        sx={{
           height: "100%",
-          width: 420,
-          maxWidth: "92vw",
-          background: "white",
-          borderLeft: "1px solid #ddd",
-          padding: 12,
-          boxShadow: "-10px 0 30px rgba(0,0,0,0.15)",
           display: "flex",
           flexDirection: "column",
+          overflow: "hidden",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ fontWeight: 800 }}>Bets</div>
-          <button onClick={props.onClose} style={{ marginLeft: "auto" }}>
-            ✕
-          </button>
-        </div>
-
-        <div
-          style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          px={2}
+          py={1.5}
+          borderBottom={1}
+          borderColor="divider"
         >
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 999,
-                border: "1px solid #ddd",
-                background: tab === t.key ? "#f2f2f2" : "white",
-                fontWeight: tab === t.key ? 700 : 400,
-                cursor: "pointer",
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
+          <Typography variant="h6" fontWeight={700}>
+            Bets
+          </Typography>
+          <IconButton
+            onClick={props.onClose}
+            aria-label="close"
+            size="small"
+            sx={{ color: "#EAEAEA" }}
+          >
+            ✕
+          </IconButton>
+        </Box>
 
-          <button
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          flexWrap="wrap"
+          px={2}
+          py={1.5}
+          borderBottom={1}
+          borderColor="divider"
+        >
+          <ToggleButtonGroup
+            value={tab}
+            exclusive
+            onChange={(_, v) => v != null && setTab(v)}
+            size="small"
+            sx={{ flex: 1, flexWrap: "wrap" }}
+          >
+            {TABS.map((t) => (
+              <ToggleButton key={t.key} value={t.key}>
+                {t.label}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+          <Button
+            size="small"
+            disabled={busy}
+            sx={{ color: "#EAEAEA" }}
             onClick={async () => {
               setBusy(true);
               try {
@@ -123,70 +165,95 @@ export function BetsDrawer(props: {
                 setBusy(false);
               }
             }}
-            disabled={busy}
-            style={{
-              padding: "6px 10px",
-              borderRadius: 8,
-              marginLeft: "auto",
-            }}
           >
-            {busy ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
+            {busy ? "Refreshing…" : "Refresh"}
+          </Button>
+        </Box>
 
-        <div style={{ marginTop: 12, overflow: "auto", flex: 1 }}>
+        <Box sx={{ flex: 1, overflow: "auto", px: 2, py: 2 }}>
           {filtered.length === 0 ? (
-            <div style={{ fontSize: 13, color: "#666", marginTop: 10 }}>
+            <Typography variant="body2" color="text.secondary">
               No bets.
-            </div>
+            </Typography>
           ) : (
             filtered.map((b) => (
-              <div
+              <Paper
                 key={String(b.id)}
-                style={{
-                  border: "1px solid #eee",
-                  borderRadius: 10,
-                  padding: 10,
-                  marginBottom: 10,
+                variant="outlined"
+                sx={{
+                  p: 1.5,
+                  mb: 1.5,
+                  borderColor: "divider",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ fontWeight: 800 }}>{b.area_heb ?? "-"}</div>
-                  <span style={{ marginLeft: "auto", fontSize: 12 }}>
-                    <b>{b.status ?? "-"}</b>
-                  </span>
-                </div>
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                  flexWrap="wrap"
+                  mb={1}
+                >
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    {b.area_heb ?? "-"}
+                  </Typography>
+                  {b.allow_minute_proximity && (
+                    <Chip
+                      label="±10 min"
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
+                      }}
+                      title="Minute proximity (±10 min) enabled"
+                    />
+                  )}
+                  <Chip
+                    label={String(b.status ?? "-")}
+                    size="small"
+                    color={statusColor(String(b.status))}
+                    sx={{ marginLeft: "auto" }}
+                  />
+                </Box>
 
-                <div style={{ fontSize: 13, marginTop: 6 }}>
-                  <div>
-                    <b>Date:</b> {formatBetDate(b.bet_date) ?? "-"} &nbsp;{" "}
-                    <b>Time:</b> {b.predicted_time ?? "-"}
-                  </div>
-                  <div>
-                    <b>Stake:</b> {b.amount ?? 0}
-                    {b.status === "won" ? (
-                      <>
-                        {" "}
-                        · <b>Payout:</b> {b.payout_amount ?? 0}
-                      </>
-                    ) : null}
-                  </div>
-                </div>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Date:</strong> {formatBetDate(b.bet_date) ?? "-"}{" "}
+                  <strong>Time:</strong> {b.predicted_time ?? "-"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Stake:</strong> {b.amount ?? 0}
+                  {b.status === "won" && (
+                    <>
+                      {" "}
+                      · <strong>Payout:</strong> {b.payout_amount ?? 0}
+                    </>
+                  )}
+                </Typography>
 
-                <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>
-                  <b>Placed:</b> {formatDateTime(b.placed_at)}
-                </div>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  sx={{ mt: 0.5 }}
+                >
+                  <strong>Placed:</strong> {formatDateTime(b.placed_at)}
+                </Typography>
 
-                {b.settled_alert_time ? (
-                  <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
-                    <b>Settled:</b> {formatDateTime(b.settled_alert_time)}
-                  </div>
-                ) : null}
-              </div>
+                {b.settled_alert_time && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
+                    <strong>Settled:</strong>{" "}
+                    {formatDateTime(b.settled_alert_time)}
+                  </Typography>
+                )}
+              </Paper>
             ))
           )}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Drawer>
   );
 }

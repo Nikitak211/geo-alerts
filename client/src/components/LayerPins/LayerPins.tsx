@@ -1,26 +1,48 @@
 import { FC, memo } from "react";
-import { useOrefGeoBoxes } from "../../utils/useOrefGeoBoxes";
+import { useAlertPlaces } from "../../contexts/AlertPlacesContext";
+import { usePlaceGeo } from "../../utils/useOrefGeoBoxes";
 import { Pin } from "../Pin";
-import { v4 } from "uuid";
+
+const PinWithGeo: FC<{
+  place: string;
+  title: string;
+  serverPositions?: Record<string, import("../../types").GeoBox>;
+}> = memo(({ place, title, serverPositions }) => {
+  const { center } = usePlaceGeo(place, {
+    fallbackToWebApi: false,
+    serverPositions,
+  });
+    if (!center) return null;
+    return <Pin center={center} title={title} />;
+  },
+);
+PinWithGeo.displayName = "PinWithGeo";
 
 export const LayerPins: FC = memo(() => {
-  const { geoBoxes, clearAll } = useOrefGeoBoxes("ws://localhost:8080");
+  const { places, serverPositions, clearAll } = useAlertPlaces();
 
   return (
     <>
-      {geoBoxes.map((box) => {
-        return <Pin key={v4()} center={box.center} title={box.title} />;
-      })}
-      <button
-        style={{
-          position: "absolute",
-          bottom: 0,
-        }}
-        onClick={clearAll}
-        type="button"
-      >
-        clear All Pins
-      </button>
+      {places.map(({ place, title }, i) => (
+        <PinWithGeo
+          key={`${place}-${title}-${i}`}
+          place={place}
+          title={title}
+          serverPositions={serverPositions}
+        />
+      ))}
+      {places.length > 0 && (
+        <button
+          style={{
+            position: "absolute",
+            bottom: 0,
+          }}
+          onClick={clearAll}
+          type="button"
+        >
+          Clear All Pins
+        </button>
+      )}
     </>
   );
 });

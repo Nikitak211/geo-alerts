@@ -2,8 +2,15 @@ CREATE TABLE users (
   id TEXT PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL DEFAULT '',
-  balance NUMERIC(12,2) NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE user_wallets (
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  available_balance NUMERIC(12,2) NOT NULL DEFAULT 0,
+  reserved_balance NUMERIC(12,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE payment_methods (
@@ -26,7 +33,9 @@ CREATE TABLE bets (
   status TEXT NOT NULL CHECK (status IN ('open', 'won', 'lost', 'void')),
   payout_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
   placed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  settled_alert_time TIMESTAMPTZ
+  settled_alert_time TIMESTAMPTZ,
+  allow_minute_proximity BOOLEAN NOT NULL DEFAULT false,
+  is_region BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE INDEX bets_lookup_idx
@@ -55,8 +64,12 @@ CREATE TABLE wallet_ledger (
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   kind TEXT NOT NULL,
   amount NUMERIC(12,2) NOT NULL,
+  bucket TEXT NOT NULL DEFAULT 'available',
   ref_type TEXT,
   ref_id TEXT,
   note TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- If bets table already exists without is_region, run:
+-- ALTER TABLE bets ADD COLUMN is_region BOOLEAN NOT NULL DEFAULT false;

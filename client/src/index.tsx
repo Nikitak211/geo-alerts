@@ -1,9 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import * as Cesium from "cesium";
+import { ThemeProvider } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
 
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import { Main } from "./Main";
+import { appTheme } from "./theme";
 import "./index.css";
 
 Cesium.Ion.defaultAccessToken =
@@ -19,6 +22,9 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <Main />
+    <ThemeProvider theme={appTheme}>
+      <CssBaseline />
+      <Main />
+    </ThemeProvider>
   </React.StrictMode>,
 );

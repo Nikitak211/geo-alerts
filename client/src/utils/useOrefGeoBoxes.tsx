@@ -1,3 +1,4 @@
+import * as Cesium from "cesium";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GeoBox, OrefAlert } from "../types";
 
@@ -44,10 +45,36 @@ const OREF_TO_BASE_OVERRIDES: Record<string, string> = {
   "תל אביב": "תל אביב-יפו",
   "תל אביב יפו": "תל אביב-יפו",
   "תל אביב-יפו": "תל אביב-יפו",
+  "חבל מודיעין": "מודיעין",
+  "חבל אילות": "אילת",
+  "הערבה התיכונה": "ערבה",
+  "עין קניא": "עין קנייא",
 };
+
+// Region suffixes OREF appends after comma; strip so "שאר ישוב, יהודה ושומרון" -> "שאר ישוב"
+const REGION_SUFFIXES = [
+  /,\s*יהודה ושומרון\s*$/i,
+  /,\s*בקעת הירדן\s*$/i,
+  /,\s*West Bank\s*$/i,
+  /,\s*Jordan Valley\s*$/i,
+  /,\s*Israel\s*$/i,
+  /,\s*חבל אילות\s*$/i,
+  /,\s*הערבה\s*$/i,
+];
+
+function stripRegionSuffix(s: string): string {
+  let t = s.trim();
+  for (const re of REGION_SUFFIXES) {
+    t = t.replace(re, "").trim();
+  }
+  return t;
+}
 
 function toBaseMunicipalityName(raw: string) {
   let s = normalize(raw);
+
+  // OREF often sends "Place, Region" — strip region so we match GeoJSON MUN_HEB (e.g. "שאר ישוב")
+  s = stripRegionSuffix(s);
 
   // OREF uses "X - Y" for sub-areas; keep left side
   const dash = s.split(" - ");
@@ -168,12 +195,33 @@ function bboxFromRing(ring: [number, number][]) {
   return { bbox, center };
 }
 
+/** Center of polygon from ring using Cesium's Rectangle (2D bounds on globe). */
+function centerFromRingCesium(ring: [number, number][]): { lat: number; lon: number } | null {
+  if (ring.length === 0) return null;
+  try {
+    const cartographics = ring.map(([lon, lat]) =>
+      Cesium.Cartographic.fromDegrees(lon, lat)
+    );
+    const rectangle = Cesium.Rectangle.fromCartographicArray(cartographics);
+    const center = Cesium.Rectangle.center(rectangle, new Cesium.Cartographic());
+    return {
+      lat: Cesium.Math.toDegrees(center.latitude),
+      lon: Cesium.Math.toDegrees(center.longitude),
+    };
+  } catch {
+    return null;
+  }
+}
+
 /* =========================
    GeoJSON loader + lookup index (cached)
    - geoIndex: lookupKey -> Feature[]
    ========================= */
 
-const MUNICIPALITIES_URL = "/data/municipalities.geojson";
+/** Same as AlertTester: client public folder for fast same-origin load (no server fetch). */
+function getMunicipalitiesUrl(): string {
+  return "/data/municipalities.geojson";
+}
 
 let geoLoaded = false;
 let geoLoading: Promise<void> | null = null;
@@ -184,18 +232,46 @@ async function ensureMunicipalitiesLoaded(signal?: AbortSignal) {
   if (geoLoading) return geoLoading;
 
   geoLoading = (async () => {
-    const res = await fetch(MUNICIPALITIES_URL, {
-      headers: { Accept: "application/json" },
-      signal,
-    });
-
-    if (!res.ok) {
-      throw new Error(
-        `Failed to load ${MUNICIPALITIES_URL} (HTTP ${res.status})`,
-      );
+    const url = getMunicipalitiesUrl();
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        headers: { Accept: "application/json" },
+        signal,
+        mode: "cors",
+      });
+    } catch (e) {
+      geoIndex = new Map();
+      geoLoaded = true;
+      return;
     }
 
-    const fc = (await res.json()) as FeatureCollection;
+    if (!res.ok) {
+      geoIndex = new Map();
+      geoLoaded = true;
+      return;
+    }
+
+    let fc: FeatureCollection;
+    try {
+      const text = await res.text();
+      if (!text?.trim()) {
+        fc = { type: "FeatureCollection", features: [] };
+      } else {
+        fc = JSON.parse(text) as FeatureCollection;
+        if (!fc?.features) fc = { type: "FeatureCollection", features: [] };
+      }
+    } catch {
+      fc = { type: "FeatureCollection", features: [] };
+    }
+
+    if (!Array.isArray(fc.features) || fc.features.length === 0) {
+      if (typeof process !== "undefined" && process.env.NODE_ENV === "development") {
+        console.warn(
+          "[useOrefGeoBoxes] GeoJSON has no features. Place pins will use API fallback. Put municipalities.geojson in client public/data/ (e.g. properties.MUN_HEB) for place matching."
+        );
+      }
+    }
 
     const idx = new Map<string, Feature[]>();
 
@@ -219,6 +295,72 @@ async function ensureMunicipalitiesLoaded(signal?: AbortSignal) {
 
   return geoLoading;
 }
+
+/* =========================
+   cities.json loader (pin positions: lat, lng by Hebrew name)
+   - Shape: array of { id?, name, name_en?, value?, lat, lng, zone?, ... }
+   ========================= */
+
+type CityRow = {
+  name?: string;
+  name_en?: string;
+  value?: string;
+  lat: number;
+  lng: number;
+};
+
+let citiesLoaded = false;
+let citiesLoading: Promise<void> | null = null;
+const citiesIndex = new Map<string, { lat: number; lng: number }>();
+
+const CITIES_URL = "/data/cities.json";
+
+function bboxAroundPoint(lat: number, lon: number, deltaDeg = 0.005): [number, number, number, number] {
+  return [lat - deltaDeg, lat + deltaDeg, lon - deltaDeg, lon + deltaDeg];
+}
+
+async function ensureCitiesLoaded(signal?: AbortSignal): Promise<void> {
+  if (citiesLoaded) return;
+  if (citiesLoading) return citiesLoading;
+
+  citiesLoading = (async () => {
+    try {
+      const res = await fetch(CITIES_URL, { signal, headers: { Accept: "application/json" } });
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : [];
+      const idx = new Map<string, { lat: number; lng: number }>();
+      for (const row of list as CityRow[]) {
+        const lat = Number(row?.lat);
+        const lng = Number(row?.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        const name = typeof row?.name === "string" ? row.name.trim() : "";
+        const value =
+          typeof row?.value === "string" ? row.value.trim() : name;
+        const nameEn =
+          typeof row?.name_en === "string" ? row.name_en.trim() : "";
+        if (!name || value === "all") continue;
+        const names = [name, value, nameEn].filter(Boolean);
+        const parts = name.split(",").map((s) => s.trim()).filter(Boolean);
+        for (const n of [...names, ...parts]) {
+          if (!n) continue;
+          for (const key of buildLookupKeys(n)) {
+            idx.set(key, { lat, lng });
+          }
+        }
+      }
+      idx.forEach((v, k) => citiesIndex.set(k, v));
+      citiesLoaded = true;
+    } catch {
+      // ignore (missing or large file)
+    } finally {
+      citiesLoading = null;
+    }
+  })();
+
+  return citiesLoading;
+}
+
 function pickBestResult(place: string, results: any[]): any | null {
   if (!results?.length) return null;
 
@@ -263,30 +405,26 @@ function pickBestResult(place: string, results: any[]): any | null {
 }
 
 /* =========================
-   FALLBACK WEB API (Nominatim)
+   FALLBACK WEB API (Nominatim via server proxy to avoid CORS)
    ========================= */
 
-// If you prefer to proxy this via your own server (recommended for rate-limit / CORS control),
-// change this to your server endpoint (e.g. "/api/geocode?place=...")
-const NOMINATIM = "https://nominatim.openstreetmap.org/search";
+function getGeocodeBase() {
+  if (typeof window === "undefined") return "http://localhost:8090";
+  const u = window.location;
+  return u.port === "3000" ? "http://localhost:8090" : `${u.protocol}//${u.host}`;
+}
 
 async function geocodeFallbackIL(
   place: string,
   signal?: AbortSignal,
 ): Promise<GeoBox | null> {
-  const candidates = [
-    `${place}`,
-    `${place}, בקעת הירדן`,
-    `${place}, יהודה ושומרון`,
-    `${place}, West Bank`,
-    `${place}, Jordan Valley`,
-    `${place}, Israel`,
-  ];
+  const base = getGeocodeBase();
+  // Server does GeoJSON first then API; send only place name (e.g. "שדה נחמיה"), no ", Israel"
+  const placeName = toBaseMunicipalityName(place);
+  const candidates = placeName ? [placeName] : [place].filter(Boolean);
 
   for (const q of candidates) {
-    const url =
-      `${NOMINATIM}?q=${encodeURIComponent(q)}` +
-      `&format=jsonv2&limit=5&addressdetails=1&accept-language=he,en`;
+    const url = `${base}/api/geocode?place=${encodeURIComponent(q)}`;
 
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
@@ -295,7 +433,13 @@ async function geocodeFallbackIL(
 
     if (!res.ok) continue;
 
-    const results: any[] = await res.json();
+    let results: any[];
+    try {
+      const data = await res.json();
+      results = Array.isArray(data) ? data : [];
+    } catch {
+      continue;
+    }
     const best = pickBestResult(place, results);
     if (!best) continue;
 
@@ -314,45 +458,261 @@ async function geocodeFallbackIL(
   return null;
 }
 
-/* -------------------- hook types -------------------- */
-type StoredGeo = {
+/* =========================
+   FALLBACK: Overpass API (OSM boundary relations in Israel)
+   Use when GeoJSON + Nominatim don't find the place.
+   ========================= */
+
+const OVERPASS_ENDPOINT = "https://overpass-api.de/api/interpreter";
+// Israel (south, west, north, east) for Overpass bbox
+const IL_BBOX = [29.45, 34.22, 33.35, 35.88];
+
+function escapeOverpassRegex(s: string): string {
+  return s.replace(/([.*+?^${}()|[\]\\])/g, "\\$1").trim();
+}
+
+async function geocodeOverpassIL(
+  place: string,
+  signal?: AbortSignal,
+): Promise<GeoBox | null> {
+  const escaped = escapeOverpassRegex(place);
+  if (!escaped) return null;
+
+  // Query: administrative boundaries in Israel with name or name:he matching
+  const q = `[out:json][timeout:15];
+(
+  relation["boundary"="administrative"](${IL_BBOX.join(",")})["name"~"${escaped}",i];
+  relation["boundary"="administrative"](${IL_BBOX.join(",")})["name:he"~"${escaped}"];
+);
+out geom;`;
+
+  const res = await fetch(OVERPASS_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `data=${encodeURIComponent(q)}`,
+    signal,
+  });
+
+  if (!res.ok) return null;
+
+  const json = await res.json();
+  const elements = json?.elements ?? [];
+  const withGeom = elements.filter(
+    (e: any) => e.geometry && Array.isArray(e.geometry) && e.geometry.length > 0,
+  );
+  if (withGeom.length === 0) return null;
+
+  const first = withGeom[0];
+  const geom = first.geometry as { lat: number; lon: number }[];
+  let minLat = Infinity,
+    maxLat = -Infinity,
+    minLon = Infinity,
+    maxLon = -Infinity;
+  for (const p of geom) {
+    if (p.lat < minLat) minLat = p.lat;
+    if (p.lat > maxLat) maxLat = p.lat;
+    if (p.lon < minLon) minLon = p.lon;
+    if (p.lon > maxLon) maxLon = p.lon;
+  }
+  if (minLat === Infinity) return null;
+
+  const bbox: [number, number, number, number] = [
+    minLat,
+    maxLat,
+    minLon,
+    maxLon,
+  ];
+  const center = { lat: (minLat + maxLat) / 2, lon: (minLon + maxLon) / 2 };
+  const displayName =
+    first.tags?.name ?? first.tags?.["name:he"] ?? place;
+
+  return {
+    place,
+    bbox,
+    center,
+    displayName,
+    title: place,
+  };
+}
+
+/* =========================
+   Per-pin resolver: shared cache + throttled API
+   So the layer can render fast and each pin resolves on its own.
+   ========================= */
+
+const placeGeoCache = new Map<string, GeoBox>();
+const API_CONCURRENCY = 4;
+let apiInFlight = 0;
+const apiQueue: Array<{
   place: string;
-  createdAt: number;
-  title: string;
-  resolved: boolean;
-  geo: GeoBox | null; // null when not found
+  resolve: (g: GeoBox | null) => void;
+  reject: (e: any) => void;
+  signal?: AbortSignal;
+  fallbackToWebApi: boolean;
+}> = [];
+
+function drainApiQueue() {
+  while (apiInFlight < API_CONCURRENCY && apiQueue.length > 0) {
+    const job = apiQueue.shift()!;
+    apiInFlight++;
+    (async () => {
+      try {
+        let geo: GeoBox | null = await geocodeFallbackIL(
+          job.place,
+          job.signal,
+        );
+        if (!geo) {
+          geo = await geocodeOverpassIL(job.place, job.signal);
+        }
+        if (geo) placeGeoCache.set(job.place, geo);
+        job.resolve(geo);
+      } catch (e: any) {
+        if (e?.name === "AbortError") job.reject(e);
+        else job.resolve(null);
+      } finally {
+        apiInFlight--;
+        drainApiQueue();
+      }
+    })();
+  }
+}
+
+/**
+ * Resolve one place: cache → GeoJSON → API (throttled).
+ * Shared by all pins so the layer stays fast and icons appear as they resolve.
+ */
+export async function getPlaceGeo(
+  place: string,
+  options: { signal?: AbortSignal; fallbackToWebApi?: boolean } = {},
+): Promise<GeoBox | null> {
+  const { signal, fallbackToWebApi = true } = options;
+  if (placeGeoCache.has(place)) return placeGeoCache.get(place)!;
+
+  await ensureCitiesLoaded(signal);
+  for (const key of buildLookupKeys(place)) {
+    const pos = citiesIndex.get(key);
+    if (pos) {
+      const center = { lat: pos.lat, lon: pos.lng };
+      const geo: GeoBox = {
+        place,
+        bbox: bboxAroundPoint(center.lat, center.lon),
+        center,
+        displayName: place,
+        title: place,
+      };
+      placeGeoCache.set(place, geo);
+      return geo;
+    }
+  }
+
+  await ensureMunicipalitiesLoaded(signal);
+  if (geoLoaded) {
+    const matched = new Set<Feature>();
+    for (const key of buildLookupKeys(place)) {
+      const fs = geoIndex.get(key);
+      if (fs?.length) fs.forEach((f) => matched.add(f));
+    }
+    if (matched.size > 0) {
+      const f = matched.values().next().value as Feature;
+      const ring = outerRingLonLat(f);
+      if (ring?.length) {
+        const { bbox, center: bboxCenter } = bboxFromRing(ring);
+        const center = centerFromRingCesium(ring) ?? bboxCenter;
+        const geo: GeoBox = {
+          place,
+          bbox,
+          center,
+          displayName: place,
+          title: place,
+        };
+        placeGeoCache.set(place, geo);
+        return geo;
+      }
+    }
+  }
+
+  if (!fallbackToWebApi) return null;
+
+  return new Promise<GeoBox | null>((resolve, reject) => {
+    apiQueue.push({
+      place,
+      resolve,
+      reject,
+      signal,
+      fallbackToWebApi,
+    });
+    drainApiQueue();
+  });
+}
+
+/**
+ * Hook for one pin: use serverPositions from WS when available, else resolve in background.
+ */
+export function usePlaceGeo(
+  place: string,
+  options: { fallbackToWebApi?: boolean; serverPositions?: Record<string, GeoBox> } = {},
+) {
+  const fromServer = options?.serverPositions?.[place];
+  const [geo, setGeo] = useState<GeoBox | null>(fromServer ?? null);
+  const [loading, setLoading] = useState(!fromServer);
+  const { fallbackToWebApi = true } = options;
+
+  useEffect(() => {
+    if (options?.serverPositions?.[place]) {
+      setGeo(options.serverPositions[place]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    let cancelled = false;
+    const ac = new AbortController();
+    getPlaceGeo(place, { signal: ac.signal, fallbackToWebApi })
+      .then((g) => {
+        if (!cancelled) {
+          setGeo(g);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
+  }, [place, fallbackToWebApi, options?.serverPositions]);
+
+  return {
+    center: geo?.center ?? null,
+    geo,
+    loading,
+  };
+}
+
+/* -------------------- hook types -------------------- */
+type UseOrefGeoBoxesOptions = {
+  resetOnNewAlert?: boolean;
+  /** TTL in ms for each pin; same place again resets timer. Default 10 min. */
+  pinTtlMs?: number;
 };
 
-type UseOrefGeoBoxesOptions = {
-  geocodeDelayMs?: number; // pace BOTH geojson matching and fallback calls
-  resetOnNewAlert?: boolean;
-  ttlMs?: number;
-  fallbackToWebApi?: boolean; // ✅ new
-};
+const DEFAULT_PIN_TTL_MS = 10 * 60 * 1000; // 10 min
 
 /* -------------------- hook -------------------- */
 export function useOrefGeoBoxes(
   wsUrl: string,
   options: UseOrefGeoBoxesOptions = {},
 ) {
-  const {
-    geocodeDelayMs = 0,
-    resetOnNewAlert = false,
-    ttlMs = 600_000,
-    fallbackToWebApi = true,
-  } = options;
+  const { resetOnNewAlert = false, pinTtlMs = DEFAULT_PIN_TTL_MS } = options;
 
   const [latestAlert, setLatestAlert] = useState<OrefAlert | null>(null);
-
-  // store all places, even unresolved
-  const [byPlace, setByPlace] = useState<Record<string, StoredGeo>>({});
-
-  // cache resolved GeoBox by original OREF place string
-  const cacheRef = useRef<Map<string, GeoBox>>(new Map());
+  const [serverPositions, setServerPositions] = useState<Record<string, GeoBox>>({});
   const lastAlertIdRef = useRef<string | null>(null);
 
-  const genRef = useRef(0);
-  const abortRef = useRef<AbortController | null>(null);
+  /** Stored places with expiry; same place in a new alert resets its timer. Pins removed after TTL. */
+  const [placesWithExpiry, setPlacesWithExpiry] = useState<
+    Record<string, { title: string; expiresAt: number }>
+  >({});
 
   /* -------------------- WebSocket -------------------- */
   useEffect(() => {
@@ -370,16 +730,31 @@ export function useOrefGeoBoxes(
             alert?.id &&
             lastAlertIdRef.current !== alert.id
           ) {
-            genRef.current++;
-            abortRef.current?.abort();
-            abortRef.current = null;
-
-            cacheRef.current.clear();
-            setByPlace({});
+            placeGeoCache.clear();
           }
 
           lastAlertIdRef.current = alert?.id ?? lastAlertIdRef.current;
           setLatestAlert(alert);
+
+          if (alert?.data?.length) {
+            const now = Date.now();
+            const expiresAt = now + pinTtlMs;
+            setPlacesWithExpiry((prev) => {
+              const next = { ...prev };
+              for (const place of alert.data) {
+                next[place] = { title: alert.title, expiresAt };
+              }
+              return next;
+            });
+          }
+        }
+
+        if (msg?.type === "place_positions" && msg?.payload && typeof msg.payload === "object") {
+          const boxes = msg.payload as Record<string, GeoBox>;
+          for (const [p, g] of Object.entries(boxes)) {
+            if (g?.center) placeGeoCache.set(p, g);
+          }
+          setServerPositions(boxes);
         }
       } catch {
         // ignore
@@ -387,219 +762,47 @@ export function useOrefGeoBoxes(
     };
 
     return () => ws.close();
-  }, [wsUrl, resetOnNewAlert]);
+  }, [wsUrl, resetOnNewAlert, pinTtlMs]);
 
-  /* --------------------
-     Resolve:
-     1) municipalities.geojson (exact deterministic keys)
-     2) if not found => fallback web API (Nominatim) (optional)
-     -------------------- */
+  /* -------------------- Remove expired pins every 30s -------------------- */
   useEffect(() => {
-    if (!latestAlert?.data?.length) return;
-
-    const myGen = ++genRef.current;
-
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    // pre-seed all places so UI always shows them
-    setByPlace((prev) => {
-      const next = { ...prev };
-      for (const place of latestAlert.data) {
-        if (!next[place]) {
-          next[place] = {
-            place,
-            createdAt: Date.now(),
-            title: latestAlert.title,
-            resolved: false,
-            geo: null,
-          };
-        } else {
-          next[place] = {
-            ...next[place],
-            createdAt: Date.now(),
-            title: latestAlert.title,
-          };
-        }
-      }
-      return next;
-    });
-
-    const run = async () => {
-      // load geojson/index once
-      try {
-        await ensureMunicipalitiesLoaded(controller.signal);
-      } catch (e: any) {
-        if (e?.name === "AbortError") return;
-        // if GeoJSON fails, we can still try fallback API for all (if enabled)
-        // so we do NOT return here; we continue and just skip the geojson part
-      }
-
-      for (const place of latestAlert.data) {
-        if (genRef.current !== myGen) return;
-
-        // already resolved?
-        let alreadyResolved = false;
-        setByPlace((prev) => {
-          alreadyResolved = !!prev[place]?.resolved;
-          return prev;
-        });
-        if (alreadyResolved) continue;
-
-        // cache hit
-        const cached = cacheRef.current.get(place);
-        if (cached) {
-          if (genRef.current !== myGen) return;
-          setByPlace((prev) => ({
-            ...prev,
-            [place]: {
-              place,
-              createdAt: Date.now(),
-              title: latestAlert.title,
-              resolved: true,
-              geo: cached,
-            },
-          }));
-          continue;
-        }
-
-        // 1) try geojson deterministic keys
-        let resolvedGeo: GeoBox | null = null;
-
-        if (geoLoaded) {
-          const matched = new Set<Feature>();
-          for (const key of buildLookupKeys(place)) {
-            const fs = geoIndex.get(key);
-            if (fs?.length) fs.forEach((f) => matched.add(f));
-          }
-
-          if (matched.size > 0) {
-            const f = matched.values().next().value as Feature;
-            const ring = outerRingLonLat(f);
-            if (ring) {
-              const { bbox, center } = bboxFromRing(ring);
-              resolvedGeo = {
-                place,
-                bbox,
-                center,
-                displayName: place,
-                title: place,
-              };
-            }
-          }
-        }
-
-        // 2) fallback web API if still not found
-        if (!resolvedGeo && fallbackToWebApi) {
-          try {
-            resolvedGeo = await geocodeFallbackIL(place, controller.signal);
-          } catch (e: any) {
-            if (e?.name === "AbortError") return;
-            // keep unresolved
-            resolvedGeo = null;
-          }
-        }
-
-        if (genRef.current !== myGen) return;
-
-        if (!resolvedGeo) {
-          // keep unresolved
-          setByPlace((prev) => ({
-            ...prev,
-            [place]: {
-              ...(prev[place] ?? {
-                place,
-                createdAt: Date.now(),
-                title: latestAlert.title,
-                resolved: false,
-                geo: null,
-              }),
-              createdAt: Date.now(),
-              title: latestAlert.title,
-              resolved: false,
-              geo: null,
-            },
-          }));
-        } else {
-          cacheRef.current.set(place, resolvedGeo);
-
-          setByPlace((prev) => ({
-            ...prev,
-            [place]: {
-              place,
-              createdAt: Date.now(),
-              title: latestAlert.title,
-              resolved: true,
-              geo: resolvedGeo,
-            },
-          }));
-        }
-
-        if (geocodeDelayMs > 0) {
-          await new Promise((r) => setTimeout(r, geocodeDelayMs));
-        }
-      }
-    };
-
-    run();
-
-    return () => {
-      genRef.current++;
-      controller.abort();
-    };
-  }, [latestAlert, geocodeDelayMs, fallbackToWebApi]);
-
-  /* -------------------- TTL cleanup -------------------- */
-  useEffect(() => {
-    const interval = window.setInterval(() => {
+    const interval = setInterval(() => {
       const now = Date.now();
-
-      setByPlace((prev) => {
-        const next: typeof prev = {};
-        for (const key in prev) {
-          if (now - prev[key].createdAt < ttlMs) next[key] = prev[key];
+      setPlacesWithExpiry((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        for (const [place, v] of Object.entries(next)) {
+          if (v.expiresAt <= now) {
+            delete next[place];
+            changed = true;
+          }
         }
-        return next;
+        return changed ? next : prev;
       });
-    }, 5000);
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
-    return () => window.clearInterval(interval);
-  }, [ttlMs]);
+  const alertPlaces = useMemo(
+    () =>
+      Object.entries(placesWithExpiry).map(([place, v]) => ({
+        place,
+        title: v.title,
+      })),
+    [placesWithExpiry],
+  );
 
-  /* -------------------- clear -------------------- */
   const clearAll = () => {
-    genRef.current++;
-    abortRef.current?.abort();
-    abortRef.current = null;
-
-    setByPlace({});
-    cacheRef.current.clear();
+    setLatestAlert(null);
+    setPlacesWithExpiry({});
+    setServerPositions({});
+    placeGeoCache.clear();
   };
-
-  /* -------------------- outputs -------------------- */
-
-  const geoBoxes = useMemo(
-    () =>
-      Object.values(byPlace)
-        .filter((x) => x.resolved && x.geo)
-        .map((x) => ({ ...(x.geo as GeoBox), title: x.title })),
-    [byPlace],
-  );
-
-  const unresolvedPlaces = useMemo(
-    () =>
-      Object.values(byPlace)
-        .filter((x) => !x.resolved)
-        .map((x) => x.place),
-    [byPlace],
-  );
 
   return {
     latestAlert,
-    geoBoxes, // resolved only
-    geoByPlace: byPlace, // all (geo can be null)
-    unresolvedPlaces,
+    alertPlaces,
     clearAll,
+    serverPositions,
   };
 }

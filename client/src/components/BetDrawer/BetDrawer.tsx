@@ -1,126 +1,319 @@
 import { FC, memo, useState } from "react";
-import { BetFormValues } from "../../types";
+import {
+  Autocomplete,
+  Box,
+  Button,
+  FormControlLabel,
+  Checkbox,
+  Paper,
+  TextField,
+  Typography,
+  Alert,
+} from "@mui/material";
+import { BetFormValues, SelectedArea, Wallet } from "../../types";
+import { isRegion, isExcludedFromBetting } from "../../utils/regionAreas";
+import { useOrefAreas } from "../../utils/useOrefAreas";
 
 const isValidHHMM = (v: string) => /^\d{2}:\d{2}$/.test(v);
 
+/** True if the given date + time (local) is in the past (cannot bet on it). */
+function isPredictedTimeInPast(date: string, predictedTime: string): boolean {
+  if (!date || !isValidHHMM(predictedTime)) return false;
+  const t = predictedTime.trim().slice(0, 5);
+  const iso = `${date}T${t}:00`;
+  const predictedAt = new Date(iso);
+  return (
+    Number.isFinite(predictedAt.getTime()) &&
+    predictedAt.getTime() <= Date.now()
+  );
+}
+
 export const BetDrawer: FC<{
+  selectedArea: SelectedArea | null;
   areaHeb: string;
   form: BetFormValues;
   setForm: React.Dispatch<React.SetStateAction<BetFormValues>>;
   disabled: boolean;
   loginRequired: boolean;
   paymentRequired: boolean;
+  wallet: Wallet | null;
   onClose: () => void;
   onSubmit: () => Promise<void>;
 }> = memo((props) => {
   const { form, setForm } = props;
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const {
+    areas: areaOptions,
+    loading: areasLoading,
+    error: areasError,
+  } = useOrefAreas();
 
   const timeInvalid = !isValidHHMM(form.predictedTime);
+  const predictedInPast = isPredictedTimeInPast(form.date, form.predictedTime);
+  const showAreaPicker = props.selectedArea == null;
 
   return (
-    <div
-      style={{
+    <Paper
+      elevation={8}
+      sx={{
         position: "absolute",
         right: 12,
         top: 12,
         width: 320,
-        border: "1px solid #ddd",
-        borderRadius: 10,
-        background: "white",
-        padding: 12,
-        boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+        maxWidth: "calc(100vw - 24px)",
+        p: 2,
+        zIndex: 1300,
+        bgcolor: "#22242a",
+        "& .MuiInputBase-input": { color: "#EAEAEA" },
+        "& .MuiInputLabel-root": { color: "rgba(234, 234, 234, 0.7)" },
+        "& .MuiInputLabel-root.Mui-focused": { color: "#EAEAEA" },
+        "& .MuiOutlinedInput-notchedOutline": {
+          borderColor: "rgba(234, 234, 234, 0.5)",
+        },
+        "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+          borderColor: "rgba(234, 234, 234, 0.8)",
+        },
+        "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+          {
+            borderColor: "#EAEAEA",
+          },
+        "& .MuiFormHelperText-root": { color: "rgba(234, 234, 234, 0.7)" },
+        "& .MuiSvgIcon-root": { color: "#EAEAEA" },
       }}
     >
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <div style={{ fontWeight: 700 }}>Bet on area</div>
-        <button onClick={props.onClose} style={{ marginLeft: "auto" }}>
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="space-between"
+        mb={1.5}
+      >
+        <Typography variant="subtitle1" fontWeight={700} color="text.primary">
+          Bet on area
+        </Typography>
+        <Button
+          size="small"
+          onClick={props.onClose}
+          aria-label="close"
+          sx={{ color: "#EAEAEA", minWidth: 0 }}
+        >
           ✕
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      <div style={{ marginTop: 6, fontSize: 13 }}>
-        <div>
-          <b>MUN_HEB:</b> {props.areaHeb}
-        </div>
-      </div>
+      {showAreaPicker ? (
+        <Box sx={{ mb: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+            <strong>Area</strong>
+          </Typography>
+          <Autocomplete
+            value={form.areaHeb ?? form.name ?? null}
+            inputValue={form.areaHeb ?? form.name ?? ""}
+            onInputChange={(_, value) =>
+              setForm((f) => ({ ...f, areaHeb: value ?? "" }))
+            }
+            onChange={(_, value) =>
+              setForm((f) => ({ ...f, areaHeb: value ?? "" }))
+            }
+            options={areaOptions}
+            loading={areasLoading}
+            freeSolo
+            filterSelectedOptions={false}
+            ListboxProps={{ style: { maxHeight: 320 } }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                size="small"
+                placeholder="Type to filter, then select..."
+                error={!!areasError}
+                helperText={areasError ?? undefined}
+                sx={{ "& .MuiInputBase-input": { color: "#EAEAEA" } }}
+              />
+            )}
+            sx={{
+              "& .MuiOutlinedInput-root": { color: "#EAEAEA" },
+              "& .MuiInputLabel-root": { color: "rgba(234, 234, 234, 0.7)" },
+              "& .MuiAutocomplete-popupIndicator": { color: "#EAEAEA" },
+              "& .MuiAutocomplete-clearIndicator": { color: "#EAEAEA" },
+            }}
+          />
+        </Box>
+      ) : (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+          <strong>Area:</strong> {props.areaHeb}
+        </Typography>
+      )}
+      {props.areaHeb && isExcludedFromBetting(props.areaHeb) && (
+        <Alert
+          severity="warning"
+          sx={{
+            mt: 0.5,
+            mb: 1,
+            bgcolor: "rgba(255, 152, 0, 0.12)",
+            color: "#ffb74d",
+            "& .MuiAlert-icon": { color: "#ffb74d" },
+          }}
+        >
+          This area cannot be used for betting.
+        </Alert>
+      )}
+      {isRegion(props.areaHeb) && !isExcludedFromBetting(props.areaHeb) && (
+        <Alert
+          severity="info"
+          sx={{
+            mt: 0.5,
+            mb: 1,
+            bgcolor: "rgba(33, 150, 243, 0.12)",
+            color: "#90caf9",
+            "& .MuiAlert-icon": { color: "#90caf9" },
+          }}
+        >
+          This area is a region (not a city/settlement). Winning payout is lower
+          than for specific settlements.
+        </Alert>
+      )}
+      {props.wallet && (
+        <Box mt={0.5} mb={1}>
+          <Typography variant="caption" color="text.secondary" display="block">
+            <strong>Available:</strong>{" "}
+            {Number(props.wallet.availableBalance ?? 0).toFixed(2)}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" display="block">
+            <strong>Reserved:</strong>{" "}
+            {Number(props.wallet.reservedBalance ?? 0).toFixed(2)}
+          </Typography>
+        </Box>
+      )}
 
-      <hr style={{ margin: "10px 0" }} />
-
-      <label style={{ display: "block", fontSize: 12, marginBottom: 4 }}>
-        Date
-      </label>
-      <input
+      <TextField
+        label="Date"
         type="date"
         value={form.date}
         onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-        style={{ width: "100%", padding: "8px 10px" }}
+        fullWidth
+        size="small"
+        margin="normal"
+        InputLabelProps={{ shrink: true }}
       />
 
-      <label
-        style={{
-          display: "block",
-          fontSize: 12,
-          marginTop: 10,
-          marginBottom: 4,
-        }}
-      >
-        Time (HH:MM)
-      </label>
-      <input
+      <TextField
+        label="Time (HH:MM)"
         type="time"
-        step={60} // minutes only (no seconds)
         value={form.predictedTime}
         onChange={(e) =>
           setForm((f) => ({ ...f, predictedTime: e.target.value }))
         }
-        style={{ width: "100%", padding: "8px 10px" }}
+        fullWidth
+        size="small"
+        margin="normal"
+        inputProps={{ step: 60 }}
+        InputLabelProps={{ shrink: true }}
+        error={timeInvalid}
+        helperText={
+          timeInvalid ? "Please enter time in HH:MM format." : undefined
+        }
       />
-      {timeInvalid && (
-        <div style={{ marginTop: 6, fontSize: 12, color: "#b00" }}>
-          Please enter time in HH:MM format.
-        </div>
-      )}
 
-      <label
-        style={{
-          display: "block",
-          fontSize: 12,
-          marginTop: 10,
-          marginBottom: 4,
-        }}
-      >
-        Amount
-      </label>
-      <input
+      <TextField
+        label="Amount"
         type="number"
-        min={1}
-        step={1}
         value={form.amount}
         onChange={(e) =>
           setForm((f) => ({ ...f, amount: Number(e.target.value) }))
         }
-        style={{ width: "100%", padding: "8px 10px" }}
+        fullWidth
+        size="small"
+        margin="normal"
+        inputProps={{ min: 1, step: 1 }}
       />
 
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={!!form.allowMinuteProximity}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                allowMinuteProximity: e.target.checked,
+              }))
+            }
+            size="small"
+            sx={{
+              color: "#EAEAEA",
+              "&.Mui-checked": { color: "#EAEAEA" },
+            }}
+          />
+        }
+        label={
+          <Typography variant="body2" color="text.primary">
+            Enable minute proximity (max ±10 min)
+          </Typography>
+        }
+        sx={{ mt: 1 }}
+      />
+
+      <Paper
+        variant="outlined"
+        sx={{
+          mt: 1.5,
+          p: 1,
+          bgcolor: "#2d2f36",
+          borderColor: "divider",
+        }}
+      >
+        <Typography
+          variant="caption"
+          fontWeight={700}
+          display="block"
+          gutterBottom
+          color="text.secondary"
+        >
+          Time payout model
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block">
+          • High payout for an exact guess on <strong>HH:MM</strong>.
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block">
+          • When enabled, lower payout for closest minutes within ±10 minutes of
+          the alert time.
+        </Typography>
+      </Paper>
+
       {props.loginRequired && (
-        <div style={{ marginTop: 10, fontSize: 12, color: "#b00" }}>
+        <Typography variant="body2" color="error" sx={{ mt: 1 }}>
           Login required to place a bet.
-        </div>
+        </Typography>
       )}
       {props.paymentRequired && (
-        <div style={{ marginTop: 10, fontSize: 12, color: "#b00" }}>
+        <Typography variant="body2" color="error" sx={{ mt: 1 }}>
           Select a payment method to place a bet.
-        </div>
+        </Typography>
+      )}
+      {predictedInPast && (
+        <Alert
+          severity="warning"
+          sx={{ mt: 1, bgcolor: "rgba(255, 152, 0, 0.12)", color: "#ffb74d" }}
+        >
+          Cannot place a bet for a time in the past.
+        </Alert>
       )}
 
       {err && (
-        <div style={{ marginTop: 10, fontSize: 12, color: "#b00" }}>{err}</div>
+        <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+          {err}
+        </Typography>
       )}
 
-      <button
-        disabled={props.disabled || busy || timeInvalid}
+      <Button
+        variant="contained"
+        fullWidth
+        disabled={
+          props.disabled ||
+          busy ||
+          timeInvalid ||
+          predictedInPast ||
+          isExcludedFromBetting(props.areaHeb)
+        }
         onClick={async () => {
           setErr(null);
           setBusy(true);
@@ -132,16 +325,11 @@ export const BetDrawer: FC<{
             setBusy(false);
           }
         }}
-        style={{
-          width: "100%",
-          marginTop: 12,
-          padding: "10px 12px",
-          fontWeight: 700,
-        }}
+        sx={{ mt: 2 }}
       >
-        Place Bet
-      </button>
-    </div>
+        {busy ? "Placing…" : "Place Bet"}
+      </Button>
+    </Paper>
   );
 });
 

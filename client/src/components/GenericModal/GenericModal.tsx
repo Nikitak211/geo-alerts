@@ -1,4 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  Box,
+  Button,
+  Modal,
+  Paper,
+  TextField,
+  Typography,
+} from "@mui/material";
 
 type ModalMode = "register" | "paymentMethod";
 
@@ -8,10 +16,7 @@ export function GenericModal(props: {
   title?: string;
   onClose: () => void;
 
-  // register
   onRegister?: (email: string, password: string) => Promise<void>;
-
-  // payment method
   onAddPaymentMethod?: (label: string) => Promise<void>;
   onPaymentMethodAdded?: () => Promise<void> | void;
 }) {
@@ -43,100 +48,94 @@ export function GenericModal(props: {
     }
   }, [props.open, props.mode]);
 
-  if (!props.open) return null;
-
   return (
-    <div
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) props.onClose();
-      }}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.35)",
+    <Modal
+      open={props.open}
+      onClose={props.onClose}
+      sx={{
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 9999,
-        padding: 16,
+        p: 2,
       }}
     >
-      <div
-        style={{
+      <Paper
+        sx={{
           width: 380,
           maxWidth: "100%",
-          background: "#fff",
-          borderRadius: 12,
-          border: "1px solid #ddd",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-          padding: 14,
+          p: 2,
+          bgcolor: "#2d2f36",
+          border: "1px solid rgba(255,255,255,0.12)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ fontWeight: 800 }}>{title}</div>
-          <button onClick={props.onClose} style={{ marginLeft: "auto" }}>
+        <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+          <Typography variant="h6" fontWeight={700} color="text.primary">
+            {title}
+          </Typography>
+          <Button
+            size="small"
+            onClick={props.onClose}
+            aria-label="close"
+            sx={{ color: "#EAEAEA", minWidth: 0 }}
+          >
             ✕
-          </button>
-        </div>
+          </Button>
+        </Box>
 
-        <div style={{ marginTop: 12 }}>
+        <Box component="form" sx={{ mt: 2 }}>
           {props.mode === "register" ? (
             <>
-              <label
-                style={{ display: "block", fontSize: 12, marginBottom: 4 }}
-              >
-                Email
-              </label>
-              <input
+              <TextField
+                fullWidth
+                size="small"
+                label="Email"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ width: "100%", padding: "8px 10px" }}
                 placeholder="email"
-              />
-
-              <label
-                style={{
-                  display: "block",
-                  fontSize: 12,
-                  marginTop: 10,
-                  marginBottom: 4,
+                margin="normal"
+                sx={{
+                  "& .MuiInputBase-input": { color: "#EAEAEA" },
+                  "& .MuiInputLabel-root": { color: "rgba(234,234,234,0.7)" },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(234,234,234,0.5)",
+                  },
                 }}
-              >
-                Password
-              </label>
-              <input
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="Password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ width: "100%", padding: "8px 10px" }}
                 placeholder="password"
+                margin="normal"
+                sx={{
+                  "& .MuiInputBase-input": { color: "#EAEAEA" },
+                  "& .MuiInputLabel-root": { color: "rgba(234,234,234,0.7)" },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(234,234,234,0.5)",
+                  },
+                }}
               />
-
-              <button
+              <Button
+                fullWidth
+                variant="contained"
                 disabled={busy}
-                style={{
-                  width: "100%",
-                  marginTop: 12,
-                  padding: "10px 12px",
-                  fontWeight: 700,
+                sx={{
+                  mt: 2,
+                  bgcolor: "rgba(255,255,255,0.15)",
+                  color: "#EAEAEA",
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
                 }}
                 onClick={async () => {
                   setErr(null);
                   setBusy(true);
-
                   try {
-                    if (!props.onRegister) {
-                      throw new Error("Register handler missing");
-                    }
-
-                    if (!email.trim()) {
-                      throw new Error("Missing email");
-                    }
-
-                    if (password.length < 4) {
-                      throw new Error("Password too short");
-                    }
-
+                    if (!props.onRegister) throw new Error("Register handler missing");
+                    if (!email.trim()) throw new Error("Missing email");
+                    if (password.length < 4) throw new Error("Password too short");
                     await props.onRegister(email.trim(), password);
                     props.onClose();
                   } catch (e: any) {
@@ -147,43 +146,42 @@ export function GenericModal(props: {
                 }}
               >
                 Register
-              </button>
+              </Button>
             </>
           ) : (
             <>
-              <label
-                style={{ display: "block", fontSize: 12, marginBottom: 4 }}
-              >
-                Label
-              </label>
-              <input
+              <TextField
+                fullWidth
+                size="small"
+                label="Label"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                style={{ width: "100%", padding: "8px 10px" }}
                 placeholder='e.g. "Visa **** 4242"'
+                margin="normal"
+                sx={{
+                  "& .MuiInputBase-input": { color: "#EAEAEA" },
+                  "& .MuiInputLabel-root": { color: "rgba(234,234,234,0.7)" },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(234,234,234,0.5)",
+                  },
+                }}
               />
-
-              <button
+              <Button
+                fullWidth
+                variant="contained"
                 disabled={busy}
-                style={{
-                  width: "100%",
-                  marginTop: 12,
-                  padding: "10px 12px",
-                  fontWeight: 700,
+                sx={{
+                  mt: 2,
+                  bgcolor: "rgba(255,255,255,0.15)",
+                  color: "#EAEAEA",
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
                 }}
                 onClick={async () => {
                   setErr(null);
                   setBusy(true);
-
                   try {
-                    if (!props.onAddPaymentMethod) {
-                      throw new Error("Payment handler missing");
-                    }
-
-                    if (!label.trim()) {
-                      throw new Error("Missing label");
-                    }
-
+                    if (!props.onAddPaymentMethod) throw new Error("Payment handler missing");
+                    if (!label.trim()) throw new Error("Missing label");
                     await props.onAddPaymentMethod(label.trim());
                     await props.onPaymentMethodAdded?.();
                     props.onClose();
@@ -195,17 +193,17 @@ export function GenericModal(props: {
                 }}
               >
                 Add payment method
-              </button>
+              </Button>
             </>
           )}
 
           {err && (
-            <div style={{ marginTop: 10, fontSize: 12, color: "#b00" }}>
+            <Typography variant="body2" color="error" sx={{ mt: 1.5 }}>
               {err}
-            </div>
+            </Typography>
           )}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Paper>
+    </Modal>
   );
 }

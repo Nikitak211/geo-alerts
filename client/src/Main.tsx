@@ -1,10 +1,12 @@
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
+import { Box, Paper, Typography } from "@mui/material";
 import { TopToolbar } from "./components/TopToolbar/TopToolbar";
 import { GenericModal } from "./components/GenericModal/GenericModal";
 import { BetDrawer } from "./components/BetDrawer/BetDrawer";
 import { BetsDrawer } from "./components/BetsDrawer/BetsDrawer";
 import { User, PaymentMethod, Bet, BetFormValues } from "./types";
 import { api } from "./utils/helper";
+import { isRegion, isExcludedFromBetting } from "./utils/regionAreas";
 import { MainMap } from "./components/MainMap/MainMap";
 
 type SelectedArea = {
@@ -38,11 +40,16 @@ export const Main: FC = () => {
     date: getLocalDateInputValue(),
     predictedTime: "",
     amount: 10,
+    allowMinuteProximity: true,
   });
 
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<
     string | null
   >(null);
+
+  const [notifications, setNotifications] = useState<
+    { id: number; text: string }[]
+  >([]);
 
   const refreshBets = useCallback(async () => {
     const list = await api<Bet[]>("/api/bets");
@@ -78,7 +85,7 @@ export const Main: FC = () => {
       }),
     });
 
-    await refreshMe(); // reload user balance
+    await refreshMe(); // reload user wallet
   };
 
   useEffect(() => {
@@ -99,25 +106,110 @@ export const Main: FC = () => {
     })();
   }, [refreshMe, loadPaymentMethods]);
 
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:8080");
+
+    ws.onmessage = (ev) => {
+      let msg: any;
+      try {
+        msg = JSON.parse(ev.data);
+      } catch {
+        return;
+      }
+
+      if (msg.type === "wallet_updated" && msg.payload) {
+        const p = msg.payload;
+        setUser((prev) => {
+          if (!prev || prev.id !== p.userId) return prev;
+          return {
+            ...prev,
+            wallet: {
+              availableBalance: Number(p.availableBalance ?? 0),
+              reservedBalance: Number(p.reservedBalance ?? 0),
+              totalBalance:
+                Number(p.availableBalance ?? 0) +
+                Number(p.reservedBalance ?? 0),
+            },
+          };
+        });
+
+        setNotifications((prev) => [
+          {
+            id: Date.now(),
+            text:
+              p.reason === "deposit"
+                ? "Deposit completed"
+                : p.reason === "bet_reserve"
+                  ? "Bet placed and funds reserved"
+                  : "Wallet updated after settlement",
+          },
+          ...prev,
+        ]);
+      }
+
+      if (msg.type === "bet_settlement") {
+        const p = msg.payload || {};
+        const area = p.areaHeb ?? p.affectedAreaKey ?? "area";
+        const winners = Array.isArray(p.winners) ? p.winners.length : 0;
+
+        setNotifications((prev) => [
+          {
+            id: Date.now(),
+            text: `Settlement for ${area} (${winners} winner${
+              winners === 1 ? "" : "s"
+            })`,
+          },
+          ...prev,
+        ]);
+
+        // refresh bets so drawer & state stay in sync
+        refreshBets().catch(() => undefined);
+      }
+
+      if (msg.type === "bets_expired" && msg.payload) {
+        const count = Number(msg.payload.count ?? 0);
+        setNotifications((prev) => [
+          {
+            id: Date.now(),
+            text:
+              count > 0
+                ? `${count} bet${count === 1 ? "" : "s"} expired`
+                : "Some bets expired",
+          },
+          ...prev,
+        ]);
+
+        refreshBets().catch(() => undefined);
+      }
+    };
+
+    return () => ws.close();
+  }, [refreshBets]);
+
+  const effectiveAreaHeb = selectedArea?.areaHeb ?? form.areaHeb ?? form.name ?? "";
+
   const canBet = useMemo(() => {
     if (!user) return false;
     if (!selectedPaymentMethodId) return false;
-    if (!selectedArea) return false;
+    if (!effectiveAreaHeb) return false;
     if (!form.date) return false;
     if (!form.predictedTime || !/^\d{2}:\d{2}$/.test(form.predictedTime))
       return false;
     if (!Number.isFinite(form.amount) || form.amount <= 0) return false;
 
     return true;
-  }, [user, selectedPaymentMethodId, selectedArea, form]);
+  }, [user, selectedPaymentMethodId, effectiveAreaHeb, form]);
 
-  const handleAreaSelect = useCallback((area: SelectedArea) => {
-    setSelectedArea(area);
-    setForm({
+  const handleOpenPlaceBetFromToolbar = useCallback(() => {
+    setSelectedArea(null);
+    setForm((prev) => ({
+      ...prev,
       date: getLocalDateInputValue(),
       predictedTime: "",
       amount: 10,
-    });
+      allowMinuteProximity: true,
+      areaHeb: "",
+    }));
     setIsBetOpen(true);
   }, []);
 
@@ -178,7 +270,8 @@ export const Main: FC = () => {
   );
 
   const submitBet = useCallback(async () => {
-    if (!selectedArea) throw new Error("No area selected");
+    const areaHeb = selectedArea?.areaHeb ?? form.areaHeb ?? form.name ?? "";
+    if (!areaHeb) throw new Error("Select an area");
     if (!form.date) throw new Error("Missing date");
     if (!form.predictedTime || !/^\d{2}:\d{2}$/.test(form.predictedTime)) {
       throw new Error("Time must be HH:MM");
@@ -193,11 +286,13 @@ export const Main: FC = () => {
     await api<{ ok: true; betId: string }>("/api/bets", {
       method: "POST",
       body: JSON.stringify({
-        areaHeb: selectedArea.areaHeb,
+        areaHeb,
         betDate: form.date,
         predictedTime: form.predictedTime,
         amount: form.amount,
         paymentMethodId: selectedPaymentMethodId,
+        allowMinuteProximity: !!form.allowMinuteProximity,
+        is_region: isRegion(areaHeb),
       }),
     });
 
@@ -207,6 +302,8 @@ export const Main: FC = () => {
       date: new Date().toISOString().slice(0, 10),
       predictedTime: "",
       amount: 10,
+      allowMinuteProximity: true,
+      areaHeb: "",
     });
 
     await refreshMe();
@@ -214,7 +311,7 @@ export const Main: FC = () => {
   }, [form, selectedArea, selectedPaymentMethodId, refreshMe, refreshBets]);
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       <TopToolbar
         user={user}
         paymentMethods={paymentMethods}
@@ -233,10 +330,11 @@ export const Main: FC = () => {
           setModalOpen(true);
         }}
         onOpenBets={openBets}
+        onOpenPlaceBet={handleOpenPlaceBetFromToolbar}
       />
 
-      <div style={{ position: "relative", flex: 1 }}>
-        <MainMap onAreaSelect={handleAreaSelect} />
+      <Box sx={{ position: "relative", flex: 1 }}>
+        <MainMap />
 
         <GenericModal
           open={modalOpen}
@@ -246,17 +344,20 @@ export const Main: FC = () => {
           onAddPaymentMethod={handleAddPaymentMethod}
         />
 
-        {isBetOpen && selectedArea && (
+        {isBetOpen && (
           <BetDrawer
-            areaHeb={selectedArea.areaHeb}
+            selectedArea={selectedArea}
+            areaHeb={effectiveAreaHeb}
             form={form}
             setForm={setForm}
             disabled={!canBet}
             loginRequired={!user}
             paymentRequired={!!user && !selectedPaymentMethodId}
+            wallet={user?.wallet ?? null}
             onClose={() => {
               setIsBetOpen(false);
               setSelectedArea(null);
+              setForm((f) => ({ ...f, areaHeb: "" }));
             }}
             onSubmit={submitBet}
           />
@@ -268,7 +369,35 @@ export const Main: FC = () => {
           onClose={() => setBetsOpen(false)}
           onRefresh={refreshBets}
         />
-      </div>
-    </div>
+
+        {notifications.length > 0 && (
+          <Box
+            sx={{
+              position: "absolute",
+              left: 12,
+              bottom: 12,
+              display: "flex",
+              flexDirection: "column",
+              gap: 1,
+              maxWidth: 320,
+            }}
+          >
+            {notifications.slice(0, 3).map((n) => (
+              <Paper
+                key={n.id}
+                elevation={2}
+                sx={{
+                  p: 1.25,
+                  bgcolor: "#22242a",
+                  color: "#EAEAEA",
+                }}
+              >
+                <Typography variant="body2">{n.text}</Typography>
+              </Paper>
+            ))}
+          </Box>
+        )}
+      </Box>
+    </Box>
   );
 };
