@@ -4,6 +4,7 @@ import type { AlertPayload, GeoBox, HighlightStore } from "../../types";
 import { normalize, toBaseMunicipalityName } from "../../utils/cityNameMatching";
 import { createSirenPlayer } from "../../utils/siren";
 import { useAlertPlaces } from "../../contexts/AlertPlacesContext";
+import { useOrefTrajectory } from "../../features/oref";
 import { getWsUrl } from "../../utils/helper";
 import { GeoJsonProvider, useGeoJsonContext } from "../../contexts/GeoJsonContext";
 import { MunicipalityGeoJsonLayer } from "../MapLayer";
@@ -24,6 +25,7 @@ function AlertTesterContent() {
 
   const { getDisplayNamesForCity } = useGeoJsonContext();
   const { setPlaces, setServerPositions, clearAll } = useAlertPlaces();
+  const { clearTrajectories } = useOrefTrajectory();
 
   const [highlightedNames, setHighlightedNames] = useState<Set<string>>(
     new Set(),
@@ -256,6 +258,7 @@ function AlertTesterContent() {
   const clearAlerts = () => {
     setAlerts([]);
     clearAll();
+    clearTrajectories();
     setBlinking({});
     clearAllCityHighlights();
     Object.values(blinkTimeoutsRef.current).forEach((t) =>

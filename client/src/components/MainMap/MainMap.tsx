@@ -5,8 +5,15 @@ import { Events } from "../../Events";
 import { AlertPlacesProvider } from "../../contexts/AlertPlacesContext";
 import { AlertTester } from "../AlertTester";
 import { LayerPins } from "../LayerPins";
+import {
+  AlertPinsLayer,
+  AlertTrajectoryLayer,
+  AlertTrajectoryDebugLayer,
+  IranBorderLayer,
+  OrefTrajectoryProvider,
+} from "../../features/oref";
 
-export const MainMap: FC = memo(({}) => {
+export const MainMap: FC = memo(function MainMap() {
   return (
     <Viewer
       sceneMode={SceneMode.SCENE2D}
@@ -26,9 +33,15 @@ export const MainMap: FC = memo(({}) => {
       }}
     >
       <AlertPlacesProvider>
-        <LayerPins />
-        <Events />
-        <AlertTester />
+        <OrefTrajectoryProvider>
+          <LayerPins />
+          <Events />
+          <AlertTester />
+          <IranBorderLayer />
+          <AlertPinsLayer />
+          <AlertTrajectoryLayer />
+          <AlertTrajectoryDebugLayer />
+        </OrefTrajectoryProvider>
       </AlertPlacesProvider>
     </Viewer>
   );
