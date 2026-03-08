@@ -1,9 +1,4 @@
-import {
-  Cartesian3,
-  Google2DImageryProvider,
-  ImageryLayer,
-  IonImageryProvider,
-} from "cesium";
+import { Cartesian3, Google2DImageryProvider, ImageryLayer } from "cesium";
 import { FC } from "react";
 import { useCesium } from "resium";
 
@@ -21,7 +16,7 @@ const overlay = await ImageryLayer.fromProviderAsync(
   }),
 );
 
-const provider = await IonImageryProvider.fromAssetId(3830184);
+// const provider = await IonImageryProvider.fromAssetId(3830184);
 
 export const Events: FC = () => {
   const viewer = useCesium().viewer;
@@ -29,7 +24,7 @@ export const Events: FC = () => {
   if (viewer) {
     viewer.imageryLayers.add(roadmapLayer);
     viewer.imageryLayers.add(overlay);
-    viewer.imageryLayers.addImageryProvider(provider);
+    // viewer.imageryLayers.addImageryProvider(provider);
 
     viewer.scene.camera.flyTo({
       duration: 0,

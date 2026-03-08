@@ -26,7 +26,8 @@ const CLEAR_INTERVAL_MS = 5000;
 export function useTrajectoryAlerts(
   wsUrl?: string,
   iranBoundarySegments?: BoundarySegment[] | null,
-  iranGeoJson?: IranGeoJsonFeature[] | null
+  iranGeoJson?: IranGeoJsonFeature[] | null,
+  irBases?: Array<[number, number]> | null
 ): {
   trajectoryAlerts: TrajectoryAlertState[];
   lastUpdate: ReturnType<typeof useOrefAlerts>["lastUpdate"];
@@ -77,13 +78,16 @@ export function useTrajectoryAlerts(
 
     const positions = eligible.areas.map((a) => a.point);
     const areaCount = eligible.areas.length;
-    const centerOffsetNorthKm =
-      areaCount === 40 ? 30 : areaCount > 40 ? (areaCount - 40) * 0.4 : undefined;
+    const rawOffset =
+      areaCount > 60 ? 0 : areaCount === 40 ? 30 : areaCount > 40 ? (areaCount - 40) * 0.4 : 0;
+    const centerOffsetNorthKm = rawOffset > 0 ? Math.min(rawOffset, 30) : undefined;
     const result = computeTrajectory(
       positions,
       iranBoundarySegments,
       iranGeoJson,
-      centerOffsetNorthKm
+      centerOffsetNorthKm,
+      areaCount,
+      irBases
     );
     if (!result) return;
 
@@ -99,7 +103,7 @@ export function useTrajectoryAlerts(
       }
       return [...prev, newItem];
     });
-  }, [lastUpdate, serverPositions, iranBoundarySegments, iranGeoJson]);
+  }, [lastUpdate, serverPositions, iranBoundarySegments, iranGeoJson, irBases]);
 
   useEffect(() => {
     const id = setInterval(() => {

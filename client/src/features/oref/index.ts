@@ -8,6 +8,7 @@ export {
   AlertTrajectoryLayer,
   AlertTrajectoryDebugLayer,
   IranBorderLayer,
+  IrBasesLayer,
 } from "./components";
 export { OrefTrajectoryProvider, useOrefTrajectory } from "./context/OrefTrajectoryContext";
 export { useOrefAlerts, useTrajectoryAlerts } from "./hooks";
@@ -21,3 +22,13 @@ export type {
 } from "./types/oref.types";
 export type { RawOrefPayload } from "./hooks/useOrefAlerts";
 export type { TrajectoryAlertState } from "./hooks/useTrajectoryAlerts";
+
+export { solveProximity } from "./utils/solveProximity";
+export { israelAoiBoundaries } from "./utils/proximityBoundaries";
+export type {
+  ProximityResult,
+  AlertPlace,
+  ApproachSide,
+  BoundarySet,
+  LonLat,
+} from "./utils/proximityTypes";

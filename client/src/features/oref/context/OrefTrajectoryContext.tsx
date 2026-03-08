@@ -10,6 +10,7 @@ import {
   useMemo,
 } from "react";
 import { useIranBoundary } from "../hooks/useIranBoundary";
+import { useIrBases } from "../hooks/useIrBases";
 import { useTrajectoryAlerts } from "../hooks/useTrajectoryAlerts";
 import type { TrajectoryAlertState } from "../hooks/useTrajectoryAlerts";
 import type { IranGeoJsonFeature } from "../hooks/useIranBoundary";
@@ -31,10 +32,12 @@ export function OrefTrajectoryProvider({
   wsUrl?: string;
 }) {
   const { segments: iranBoundarySegments, geojson: iranGeoJson } = useIranBoundary();
+  const irBases = useIrBases();
   const { trajectoryAlerts, connected, clearTrajectories } = useTrajectoryAlerts(
     wsUrl,
     iranBoundarySegments,
-    iranGeoJson
+    iranGeoJson,
+    irBases
   );
   const value = useMemo(
     () => ({ trajectoryAlerts, connected, clearTrajectories, iranGeoJson }),

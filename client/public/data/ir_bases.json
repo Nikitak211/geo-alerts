@@ -1,0 +1,163 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mehrabad Air Base",
+        "type": "IRIAF Airbase",
+        "city": "Tehran"
+      },
+      "geometry": { "type": "Point", "coordinates": [51.3134, 35.6892] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Doshan Tappeh Air Base",
+        "type": "IRIAF Airbase",
+        "city": "Tehran"
+      },
+      "geometry": { "type": "Point", "coordinates": [51.489, 35.702] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Hamadan (Nojeh) Airbase",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Hamadan"
+      },
+      "geometry": { "type": "Point", "coordinates": [48.5525, 34.8692] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Vahdati Air Base",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Dezful"
+      },
+      "geometry": { "type": "Point", "coordinates": [48.3976, 32.4347] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Omidiyeh Air Base",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Omidiyeh"
+      },
+      "geometry": { "type": "Point", "coordinates": [49.534, 30.835] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tabriz Air Base",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Tabriz"
+      },
+      "geometry": { "type": "Point", "coordinates": [46.235, 38.1333] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Isfahan Air Base",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Isfahan"
+      },
+      "geometry": { "type": "Point", "coordinates": [51.8613, 32.7508] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Bandar Abbas Air Base",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Bandar Abbas"
+      },
+      "geometry": { "type": "Point", "coordinates": [56.3778, 27.2186] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Bushehr Air Base",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Bushehr"
+      },
+      "geometry": { "type": "Point", "coordinates": [50.8346, 28.9444] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Shiraz Air Base",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Shiraz"
+      },
+      "geometry": { "type": "Point", "coordinates": [52.5898, 29.5392] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mashhad Air Base",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Mashhad"
+      },
+      "geometry": { "type": "Point", "coordinates": [59.64, 36.235] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kermanshah Air Base",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Kermanshah"
+      },
+      "geometry": { "type": "Point", "coordinates": [47.1581, 34.3459] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Zahedan Air Base",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Zahedan"
+      },
+      "geometry": { "type": "Point", "coordinates": [60.9062, 29.475] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Birjand Air Base",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Birjand"
+      },
+      "geometry": { "type": "Point", "coordinates": [59.2661, 32.8969] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Chabahar Air Base",
+        "type": "IRIAF Tactical Air Base",
+        "city": "Chabahar"
+      },
+      "geometry": { "type": "Point", "coordinates": [60.3821, 25.4436] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Oghab 44 Underground Base",
+        "type": "Underground Air Base"
+      },
+      "geometry": { "type": "Point", "coordinates": [55.5068, 28.0564] }
+    }
+  ]
+}

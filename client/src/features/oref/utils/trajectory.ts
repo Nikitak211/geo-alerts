@@ -1,14 +1,14 @@
 /**
- * Trajectory math engine: compute direction from the alert impact geometry (no hardcoded Iran).
- * 1) Principal direction of impact points (axis of spread). 2) Orient toward Iran (eastward).
- * 3) Ray from center along that bearing; first intersection with Iran border = trajectory end.
+ * Trajectory math engine: always compute trajectory toward Iran.
+ * Bearing from impact centroid to Iran (Baneh/Mahabad or best-matching base when 150+ areas).
+ * Ray extends to Iran border or to the chosen reference point.
  */
 
 import type { GeoPoint } from "../types/oref.types";
 import type { TrajectoryResult } from "../types/oref.types";
 import type { BoundarySegment } from "./iranBoundary";
 import type { IranGeoJsonFeature } from "../hooks/useIranBoundary";
-import { centroid, bearing, principalBearingDeg, movePoint } from "./geo";
+import { centroid, bearing, principalBearingDeg, movePoint, haversineKm } from "./geo";
 import { createTrajectoryRay, findIranBorderCrossing } from "./trajectoryRay";
 
 /** Number of polyline segments from centroid to Iran border. */
@@ -26,27 +26,59 @@ const SOUTH_LAT_MAX = 31.6;
 /** Baneh, western Iran — origin for southern Israel alerts (lon, lat). */
 const BANEH: GeoPoint = [45.88, 35.99];
 
-/**
- * Orient principal bearing so it points toward Iran (eastern hemisphere, 0°–180°).
- * Principal axis has two directions; pick the one that points east (not west).
- */
-function orientBearingTowardIran(bearingDeg: number): number {
-  const normalized = ((bearingDeg % 360) + 360) % 360;
-  if (normalized <= 180) return normalized;
-  return normalized - 180;
+/** Mahabad, northwestern Iran — origin for northern Israel large-pool alerts (lon, lat). */
+const MAHABAD: GeoPoint = [45.72, 36.77];
+
+/** Above this area count, principal bearing is unreliable; use bearing to known source. */
+const LARGE_POOL_THRESHOLD = 60;
+
+/** Above this area count, match against ir_bases to pick best trajectory source. */
+const LARGE_POOL_BASE_THRESHOLD = 150;
+
+/** Angular difference in degrees (0–180). */
+function bearingDiff(a: number, b: number): number {
+  let d = Math.abs(((a - b) % 360) + 360) % 360;
+  if (d > 180) d = 360 - d;
+  return d;
 }
 
 /**
- * Compute trajectory direction from impact points only (algorithm, no hardcoded Iran locations).
- * Uses principal direction of the point cloud (axis of maximum spread), oriented toward Iran,
- * then first intersection with Iran border.
- * @param centerOffsetNorthKm - optional shift of start point (e.g. for 40-area alerts).
+ * Pick best Iran base from ir_bases whose bearing from center is closest to principal bearing.
+ */
+function pickBestBase(
+  center: GeoPoint,
+  principalBearing: number,
+  irBases: GeoPoint[]
+): GeoPoint | null {
+  if (!irBases.length) return null;
+  const principalOpposite = (principalBearing + 180) % 360;
+  let best: GeoPoint | null = null;
+  let bestDiff = 180;
+  for (const base of irBases) {
+    const br = bearing(center, base);
+    const d = Math.min(bearingDiff(principalBearing, br), bearingDiff(principalOpposite, br));
+    if (d < bestDiff) {
+      bestDiff = d;
+      best = base;
+    }
+  }
+  return best;
+}
+
+/**
+ * Compute trajectory direction from impact points.
+ * For N >= 150, match against ir_bases to pick best source base.
+ * @param centerOffsetNorthKm - optional shift of start point.
+ * @param areaCount - used for large-pool logic.
+ * @param irBases - Iran base coordinates from ir_bases.json; used when areaCount >= 150.
  */
 export function computeTrajectory(
   positions: GeoPoint[],
   iranBoundarySegments?: BoundarySegment[] | null,
   iranGeoJson?: IranGeoJsonFeature[] | null,
-  centerOffsetNorthKm?: number
+  centerOffsetNorthKm?: number,
+  areaCount?: number,
+  irBases?: GeoPoint[] | null
 ): TrajectoryResult | null {
   if (positions.length < MIN_POSITIONS) return null;
 
@@ -55,22 +87,32 @@ export function computeTrajectory(
     center = movePoint(center, 0, centerOffsetNorthKm);
   }
   const centerLat = center[1];
-  const bearingTowardIran =
+  const n = areaCount ?? positions.length;
+
+  // Always Iran: pick reference point (south → Baneh; north → Mahabad or best base when 150+)
+  const principalBearing = principalBearingDeg(center, positions);
+  const useBases = n >= LARGE_POOL_BASE_THRESHOLD && (irBases?.length ?? 0) > 0;
+  const bestBase = useBases ? pickBestBase(center, principalBearing, irBases!) : null;
+
+  const iranRef: GeoPoint =
     centerLat <= SOUTH_LAT_MAX
-      ? bearing(center, BANEH)
-      : orientBearingTowardIran(principalBearingDeg(center, positions));
+      ? BANEH
+      : bestBase ?? MAHABAD;
 
-  // 1) Stretch the invisible trajectory line (same line for all intersection logic)
-  const ray = createTrajectoryRay(center, bearingTowardIran);
+  const bearingTowardIran = bearing(center, iranRef);
 
-  // 2) Find first intersection of this line with the Iran border (not "closest point on border")
-  let iranCrossing = findIranBorderCrossing(
-    ray,
-    iranBoundarySegments,
-    iranGeoJson
-  );
-  if (iranCrossing == null) {
-    iranCrossing = movePoint(center, bearingTowardIran, FALLBACK_EXTEND_KM);
+  // Northern Israel with base/Mahabad: extend to that point; else use Iran border intersection
+  const extendToPoint = centerLat > SOUTH_LAT_MAX && (bestBase != null || n > LARGE_POOL_THRESHOLD);
+  let iranCrossing: GeoPoint;
+
+  if (extendToPoint) {
+    const distKm = Math.min(haversineKm(center, iranRef), 1300);
+    iranCrossing = movePoint(center, bearingTowardIran, distKm);
+  } else {
+    const ray = createTrajectoryRay(center, bearingTowardIran);
+    iranCrossing =
+      findIranBorderCrossing(ray, iranBoundarySegments, iranGeoJson) ??
+      movePoint(center, bearingTowardIran, FALLBACK_EXTEND_KM);
   }
 
   // 3) Polyline: start at impact, end at intersection (or fallback point)
