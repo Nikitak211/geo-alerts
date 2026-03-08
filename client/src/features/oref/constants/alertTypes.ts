@@ -12,6 +12,7 @@ export const OrefEventTypes = {
   OrefUpdate: "oref_update",
   PlacePositions: "place_positions",
   Hello: "hello",
+  StrikeNews: "strike_news",
 } as const;
 
 export type OrefEventType = (typeof OrefEventTypes)[keyof typeof OrefEventTypes];

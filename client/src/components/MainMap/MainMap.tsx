@@ -12,6 +12,7 @@ import {
   IranBorderLayer,
   OrefTrajectoryProvider,
 } from "../../features/oref";
+import { StrikeNewsLayer } from "../../features/strikeNews";
 
 export const MainMap: FC = memo(function MainMap() {
   return (
@@ -38,6 +39,7 @@ export const MainMap: FC = memo(function MainMap() {
           <Events />
           <AlertTester />
           <IranBorderLayer />
+          <StrikeNewsLayer />
           <AlertPinsLayer />
           <AlertTrajectoryLayer />
           <AlertTrajectoryDebugLayer />

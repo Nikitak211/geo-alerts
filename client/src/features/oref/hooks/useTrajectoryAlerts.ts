@@ -30,10 +30,11 @@ export function useTrajectoryAlerts(
 ): {
   trajectoryAlerts: TrajectoryAlertState[];
   lastUpdate: ReturnType<typeof useOrefAlerts>["lastUpdate"];
+  strikeNewsItems: ReturnType<typeof useOrefAlerts>["strikeNewsItems"];
   connected: boolean;
   clearTrajectories: () => void;
 } {
-  const { lastUpdate, serverPositions, connected } = useOrefAlerts(wsUrl);
+  const { lastUpdate, serverPositions, strikeNewsItems, connected } = useOrefAlerts(wsUrl);
   const [trajectoryAlerts, setTrajectoryAlerts] = useState<TrajectoryAlertState[]>([]);
   const clearAtByIdRef = useRef<Map<string, number>>(new Map());
   const idsRef = useRef<Set<string>>(new Set());
@@ -112,5 +113,5 @@ export function useTrajectoryAlerts(
     return () => clearInterval(id);
   }, []);
 
-  return { trajectoryAlerts, lastUpdate, connected, clearTrajectories };
+  return { trajectoryAlerts, lastUpdate, strikeNewsItems, connected, clearTrajectories };
 }

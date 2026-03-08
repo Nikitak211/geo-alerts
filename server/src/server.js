@@ -1,3 +1,4 @@
+require("dotenv").config({ path: require("path").join(__dirname, "..", ".env") });
 const express = require("express");
 const { pool } = require("./db/pool");
 const { createWsServer } = require("./ws/ws.server");
@@ -17,6 +18,9 @@ const { createSettlementService } = require("./bets/settlement.service");
 const { createExpiryService } = require("./bets/expiry.service");
 const { createBetsService } = require("./bets/bets.service");
 const { createOrefPoller } = require("./oref/oref.poller");
+const { createRssPoller } = require("./strikeNews/rss.poller");
+const { createTelegramPoller } = require("./strikeNews/telegram.poller");
+const { geocodePlace } = require("./strikeNews/strikeNews.shared");
 const { mountAuthRoutes } = require("./auth/auth.routes");
 const { mountWalletRoutes } = require("./wallet/wallet.routes");
 const { mountBetsRoutes } = require("./bets/bets.routes");
@@ -75,6 +79,25 @@ const orefPoller = createOrefPoller({
   },
 });
 const { loop: orefLoop } = orefPoller;
+
+const strikeNewsAggregator = { rss: [], telegram: [] };
+const TELEGRAM_CAP = 80;
+const setStrikeNews = (source, items) => {
+  const list = Array.isArray(items) ? items : [];
+  if (source === "telegram") {
+    const seen = new Set(strikeNewsAggregator.telegram.map((i) => i.id));
+    for (const i of list) if (!seen.has(i.id)) { seen.add(i.id); strikeNewsAggregator.telegram.push(i); }
+    strikeNewsAggregator.telegram = strikeNewsAggregator.telegram.slice(-TELEGRAM_CAP);
+  } else {
+    strikeNewsAggregator[source] = list;
+  }
+  const merged = [...strikeNewsAggregator.rss, ...strikeNewsAggregator.telegram];
+  broadcast({ type: "strike_news", ts: Date.now(), payload: merged });
+};
+const rssPoller = createRssPoller({ setStrikeNews, broadcast, sleep });
+const { loop: rssLoop } = rssPoller;
+const telegramPoller = createTelegramPoller({ setStrikeNews, sleep });
+const { loop: telegramLoop } = telegramPoller;
 
 mountAuthRoutes(app, {
   pool,
@@ -175,6 +198,47 @@ app.get("/api/geocode", async (req, res) => {
   }
 });
 
+// Global geocode for strike news (Iran, Saudi, UAE, etc.) — no country filter
+app.get("/api/geocode/global", async (req, res) => {
+  const raw = req.query.place;
+  const place = typeof raw === "string" ? raw.trim() : "";
+  if (!place) {
+    return res.status(400).json({ error: "place query required" });
+  }
+  try {
+    const url =
+      `${NOMINATIM_URL}?q=${encodeURIComponent(place)}` +
+      "&format=jsonv2&limit=3&addressdetails=1&accept-language=en";
+    const r = await fetch(url, {
+      headers: { Accept: "application/json", "User-Agent": "geo-alerts-server/1.0" },
+    });
+    if (!r.ok) {
+      return res.status(200).set("Content-Type", "application/json").json([]);
+    }
+    const data = await r.json();
+    const arr = Array.isArray(data) ? data : [];
+    return res.json(arr);
+  } catch (e) {
+    return res.status(200).set("Content-Type", "application/json").json([]);
+  }
+});
+
+app.post("/api/strike-news/ingest", async (req, res) => {
+  const raw = req.body?.items;
+  const items = Array.isArray(raw) ? raw : [];
+  if (items.length === 0) return res.status(400).json({ error: "body.items array required" });
+  const withCoords = [];
+  for (const it of items) {
+    const place = it.placeName || (it.title || "").split(/[,\n]/)[0]?.trim();
+    if (!place) continue;
+    const coords = await geocodePlace(place);
+    if (coords) withCoords.push({ ...it, lat: coords.lat, lon: coords.lon });
+    await sleep(200);
+  }
+  if (withCoords.length > 0) setStrikeNews("telegram", withCoords);
+  res.json({ ok: true, ingested: withCoords.length });
+});
+
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
@@ -196,4 +260,6 @@ async function expiryLoop() {
 }
 
 orefLoop();
+rssLoop();
+telegramLoop();
 expiryLoop();

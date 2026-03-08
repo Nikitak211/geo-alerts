@@ -13,9 +13,11 @@ import { useIranBoundary } from "../hooks/useIranBoundary";
 import { useTrajectoryAlerts } from "../hooks/useTrajectoryAlerts";
 import type { TrajectoryAlertState } from "../hooks/useTrajectoryAlerts";
 import type { IranGeoJsonFeature } from "../hooks/useIranBoundary";
+import type { StrikeNewsItem } from "../../strikeNews/types";
 
 type OrefTrajectoryContextValue = {
   trajectoryAlerts: TrajectoryAlertState[];
+  strikeNewsItems: StrikeNewsItem[];
   connected: boolean;
   clearTrajectories: () => void;
   iranGeoJson: IranGeoJsonFeature[] | null;
@@ -31,14 +33,14 @@ export function OrefTrajectoryProvider({
   wsUrl?: string;
 }) {
   const { segments: iranBoundarySegments, geojson: iranGeoJson } = useIranBoundary();
-  const { trajectoryAlerts, connected, clearTrajectories } = useTrajectoryAlerts(
+  const { trajectoryAlerts, strikeNewsItems, connected, clearTrajectories } = useTrajectoryAlerts(
     wsUrl,
     iranBoundarySegments,
     iranGeoJson
   );
   const value = useMemo(
-    () => ({ trajectoryAlerts, connected, clearTrajectories, iranGeoJson }),
-    [trajectoryAlerts, connected, clearTrajectories, iranGeoJson]
+    () => ({ trajectoryAlerts, strikeNewsItems, connected, clearTrajectories, iranGeoJson }),
+    [trajectoryAlerts, strikeNewsItems, connected, clearTrajectories, iranGeoJson]
   );
   return (
     <OrefTrajectoryContext.Provider value={value}>

@@ -1,0 +1,2 @@
+# For scripts/telegram_channels.py (Telethon – no bot, read public channels)
+telethon>=1.34.0

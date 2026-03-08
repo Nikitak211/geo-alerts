@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node ./mock-oref-ws.js",
     "start": "node ./src/server.js",
-    "test:geocode": "node ./scripts/test-geocode.js"
+    "test:geocode": "node ./scripts/test-geocode.js",
+    "telegram:login": "node ./scripts/telegram-login.js"
   },
   "keywords": [],
   "author": "",
@@ -13,8 +14,10 @@
   "description": "",
   "dependencies": {
     "crypto": "^1.0.1",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "pg": "^8.20.0",
+    "telegram": "^2.26.22",
     "ws": "^8.19.0"
   },
   "devDependencies": {

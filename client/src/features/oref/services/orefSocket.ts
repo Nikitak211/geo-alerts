@@ -6,11 +6,13 @@ import { getWsUrl } from "../../../utils/helper";
 import { OrefEventTypes } from "../constants/alertTypes";
 import type { RawOrefPayload } from "../utils/alertNormalization";
 import type { GeoBox } from "../../../types";
+import type { StrikeNewsItem } from "../../strikeNews/types";
 
 export type OrefSocketMessage =
   | { type: typeof OrefEventTypes.OrefUpdate; payload: RawOrefPayload }
   | { type: typeof OrefEventTypes.PlacePositions; payload: Record<string, GeoBox> }
-  | { type: typeof OrefEventTypes.Hello; payload?: undefined };
+  | { type: typeof OrefEventTypes.Hello; payload?: undefined }
+  | { type: typeof OrefEventTypes.StrikeNews; payload: StrikeNewsItem[] };
 
 export type OrefSocketCallbacks = {
   onMessage: (msg: OrefSocketMessage) => void;
@@ -50,6 +52,11 @@ export function createOrefSocket(
         });
       } else if (raw.type === OrefEventTypes.Hello) {
         cbs.onMessage({ type: OrefEventTypes.Hello });
+      } else if (raw.type === OrefEventTypes.StrikeNews && Array.isArray(raw.payload)) {
+        cbs.onMessage({
+          type: OrefEventTypes.StrikeNews,
+          payload: raw.payload as StrikeNewsItem[],
+        });
       }
     } catch {
       // ignore

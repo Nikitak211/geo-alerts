@@ -6,12 +6,18 @@
  * Then point client at ws://localhost:8080 and http://localhost:8090.
  */
 
+require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 const http = require("http");
 const url = require("url");
 const path = require("path");
 const { WebSocketServer } = require("ws");
 const { lookupFromGeoJson } = require("./src/geojson-lookup");
 const { resolvePlacesToGeoBoxes } = require("./src/place-resolver");
+const { createRssPoller } = require("./src/strikeNews/rss.poller");
+const { createTelegramPoller } = require("./src/strikeNews/telegram.poller");
+const { geocodePlace } = require("./src/strikeNews/strikeNews.shared");
+
+let strikeNewsIngestRef = null;
 
 const PORT = Number(process.env.PORT || 8080);
 const HTTP_PORT = Number(process.env.HTTP_PORT || 8090);
@@ -541,6 +547,36 @@ wss.on("connection", (ws) => {
 
 wsHttp.listen(PORT, () => {
   console.log(`Mock WS server: ws://localhost:${PORT}`);
+  const strikeBroadcast = (msg) => {
+    const s = JSON.stringify(msg);
+    for (const client of wss.clients) {
+      if (client.readyState === 1) client.send(s);
+    }
+  };
+  const strikeNewsAggregator = { rss: [], telegram: [] };
+  const TELEGRAM_CAP = 80;
+  const setStrikeNews = (source, items) => {
+    const list = Array.isArray(items) ? items : [];
+    if (source === "telegram") {
+      const seen = new Set(strikeNewsAggregator.telegram.map((i) => i.id));
+      for (const i of list) if (!seen.has(i.id)) { seen.add(i.id); strikeNewsAggregator.telegram.push(i); }
+      strikeNewsAggregator.telegram = strikeNewsAggregator.telegram.slice(-TELEGRAM_CAP);
+    } else {
+      strikeNewsAggregator[source] = list;
+    }
+    const merged = [...strikeNewsAggregator.rss, ...strikeNewsAggregator.telegram];
+    strikeBroadcast({ type: "strike_news", ts: Date.now(), payload: merged });
+  };
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const rssPoller = createRssPoller({
+    setStrikeNews,
+    broadcast: strikeBroadcast,
+    sleep,
+  });
+  rssPoller.loop();
+  const telegramPoller = createTelegramPoller({ setStrikeNews, sleep });
+  telegramPoller.loop();
+  strikeNewsIngestRef = { setStrikeNews, geocodePlace, sleep };
 });
 
 /* ---------------- HTTP API SERVER (port 8090) ---------------- */
@@ -568,6 +604,47 @@ const apiServer = http.createServer(async (req, res) => {
   if (pathname === "/api/health" && method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  /* POST /api/strike-news/ingest – for Python Telethon script (no bot) */
+  if (pathname === "/api/strike-news/ingest" && method === "POST") {
+    const chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    req.on("end", async () => {
+      let body;
+      try {
+        body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+      } catch (_) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid JSON body" }));
+        return;
+      }
+      const raw = body?.items;
+      const items = Array.isArray(raw) ? raw : [];
+      if (items.length === 0) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "body.items array required" }));
+        return;
+      }
+      if (!strikeNewsIngestRef) {
+        res.writeHead(503, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Strike news not ready" }));
+        return;
+      }
+      const { setStrikeNews: setStrike, geocodePlace: geo, sleep: slp } = strikeNewsIngestRef;
+      const withCoords = [];
+      for (const it of items) {
+        const place = it.placeName || (it.title || "").split(/[,\n]/)[0]?.trim();
+        if (!place) continue;
+        const coords = await geo(place);
+        if (coords) withCoords.push({ ...it, lat: coords.lat, lon: coords.lon });
+        await slp(200);
+      }
+      if (withCoords.length > 0) setStrike("telegram", withCoords);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, ingested: withCoords.length }));
+    });
     return;
   }
 
@@ -651,6 +728,32 @@ const apiServer = http.createServer(async (req, res) => {
         "place:",
         place.slice(0, 50),
       );
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify([]));
+    }
+    return;
+  }
+
+  /* /api/geocode/global - for strike news (Iran, Saudi, UAE, etc.), no country filter */
+  if (pathname === "/api/geocode/global" && method === "GET") {
+    const place = String(parsed.query.place ?? "").trim();
+    if (!place) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "place required" }));
+      return;
+    }
+    try {
+      const u =
+        `${NOMINATIM}?q=${encodeURIComponent(place)}` +
+        "&format=jsonv2&limit=3&addressdetails=1&accept-language=en";
+      const r = await fetch(u, {
+        headers: { Accept: "application/json", "User-Agent": "geo-alerts-mock/1.0" },
+      });
+      const data = r.ok ? await r.json() : [];
+      const arr = Array.isArray(data) ? data : [];
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(arr));
+    } catch (e) {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify([]));
     }
