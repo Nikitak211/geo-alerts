@@ -66,14 +66,18 @@ export function GeoJsonProvider({
     (cityNameRaw: string): string[] => {
       if (!value) return [];
       const { placeIndexByCityKey } = value;
-      const seen = new Set<string>();
+      const trimmed = cityNameRaw.trim();
       const keys = [
         ...buildLookupKeys(cityNameRaw),
         ...buildLookupKeys(toBaseMunicipalityName(cityNameRaw)),
-      ];
+      ].sort((a, b) => b.length - a.length);
+      const seen = new Set<string>();
       for (const k of keys) {
         const names = placeIndexByCityKey.get(k) ?? [];
+        if (names.length === 0) continue;
+        if (trimmed.length > 0 && k.length < trimmed.length * 0.5) continue;
         names.forEach((n) => seen.add(n));
+        break;
       }
       return Array.from(seen);
     },

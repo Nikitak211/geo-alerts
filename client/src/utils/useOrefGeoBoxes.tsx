@@ -105,6 +105,9 @@ function cleanupParens(s: string) {
 function buildLookupKeys(raw: string): string[] {
   const out = new Set<string>();
 
+  const rawTrimmed = String(raw).trim();
+  if (rawTrimmed) out.add(rawTrimmed);
+
   const original = normalize(raw);
   const base = normalize(toBaseMunicipalityName(raw));
 
@@ -385,8 +388,9 @@ function pickBestResult(place: string, results: any[]): any | null {
 
     let score = 0;
 
+    // Prefer longer key matches so "אזור תעשייה נשר - רמלה" beats "נשר" (avoids Haifa vs Ramla mix-up)
     for (const key of targetKeys) {
-      if (text.includes(key)) score += 10;
+      if (text.includes(key)) score += 5 + key.length;
     }
 
     if (/בקעת הירדן|יהודה ושומרון|west bank|jordan valley/i.test(text)) {
@@ -411,7 +415,7 @@ function pickBestResult(place: string, results: any[]): any | null {
 function getGeocodeBase() {
   if (typeof window === "undefined") return "http://localhost:8090";
   const u = window.location;
-  return u.port === "3000" ? "http://localhost:8090" : `${u.protocol}//${u.host}`;
+  return u.port === "4421" ? "http://localhost:8090" : `${u.protocol}//${u.host}`;
 }
 
 async function geocodeFallbackIL(
@@ -589,7 +593,13 @@ export async function getPlaceGeo(
   if (placeGeoCache.has(place)) return placeGeoCache.get(place)!;
 
   await ensureCitiesLoaded(signal);
-  for (const key of buildLookupKeys(place)) {
+  const placeTrimmed = place.trim();
+  // Prefer longer keys first; reject short-key matches so we don't show e.g. נשר for "אזור תעשייה נשר - רמלה"
+  const keysBySpecificity = buildLookupKeys(place).sort(
+    (a, b) => b.length - a.length,
+  );
+  for (const key of keysBySpecificity) {
+    if (placeTrimmed.length > 0 && key.length < placeTrimmed.length * 0.5) continue;
     const pos = citiesIndex.get(key);
     if (pos) {
       const center = { lat: pos.lat, lon: pos.lng };
@@ -608,7 +618,11 @@ export async function getPlaceGeo(
   await ensureMunicipalitiesLoaded(signal);
   if (geoLoaded) {
     const matched = new Set<Feature>();
-    for (const key of buildLookupKeys(place)) {
+    const geoKeysBySpecificity = buildLookupKeys(place).sort(
+      (a, b) => b.length - a.length,
+    );
+    for (const key of geoKeysBySpecificity) {
+      if (placeTrimmed.length > 0 && key.length < placeTrimmed.length * 0.5) continue;
       const fs = geoIndex.get(key);
       if (fs?.length) fs.forEach((f) => matched.add(f));
     }

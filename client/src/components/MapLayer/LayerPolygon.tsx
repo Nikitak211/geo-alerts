@@ -47,7 +47,7 @@ export const LayerPolygon: FC<LayerPolygonProps> = memo(
 
     return (
       <>
-        {polygons.map((p, i) => (
+        {polygons.map((p) => (
           <SinglePolygon
             key={v4()}
             displayName={p.displayName}

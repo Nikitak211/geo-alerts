@@ -1,47 +1,71 @@
-const crypto = require("crypto");
-
-const hash = (obj) =>
-  crypto.createHash("sha256").update(JSON.stringify(obj)).digest("hex");
+/**
+ * OREF polling loop: calls ingest/oref (step 1) only. No fetch/parse logic here.
+ */
+const path = require("path");
+const ingest = require(path.join(__dirname, "../../dist/ingest/oref"));
 
 function createOrefPoller(deps) {
   const {
-    fetchAlertsJson,
     broadcast,
     processAlertPayload,
     sleep,
     resolvePlacesAndBroadcast,
+    onAlertReady,
+    fetchAlertsJson,
+    pollIntervalMs = 3000,
   } = deps;
 
-  let lastHash = null;
+  const getJson = typeof fetchAlertsJson === "function" ? fetchAlertsJson : ingest.fetchAlertsJson;
+  const dedupeState = { lastHash: null };
 
   async function pollOnce() {
-    const json = await fetchAlertsJson();
+    const json = await getJson();
     if (!json) return;
-    const h = hash(json);
-    if (lastHash && h !== lastHash) {
-      broadcast({
-        type: "oref_update",
-        ts: Date.now(),
-        payload: json,
-      });
-      if (resolvePlacesAndBroadcast && Array.isArray(json?.data) && json.data.length > 0) {
-        resolvePlacesAndBroadcast(json.data);
-      }
-      const settlementResults = await processAlertPayload(json);
-      console.log("[oref] settlementResults length:", settlementResults.length);
+    const { emit } = ingest.shouldEmit(dedupeState, json);
+    if (!emit) return;
 
-      if (settlementResults.length) {
-        console.log("settlementResults:", settlementResults);
+    const normalized = ingest.orefToNormalizedAlert(json);
+    if (!normalized) return;
+
+    await ingest.publishNormalizedAlert(normalized, json, {
+      onBroadcastRaw(raw) {
+        broadcast({
+          type: "oref_update",
+          ts: Date.now(),
+          payload: raw,
+        });
+      },
+      async onResolvePlaces(placeNames) {
+        if (
+          resolvePlacesAndBroadcast &&
+          Array.isArray(placeNames) &&
+          placeNames.length > 0
+        ) {
+          await resolvePlacesAndBroadcast(placeNames);
+        }
+      },
+      async onPersist(_normalized, rawPayload) {
+        const settlementResults = await processAlertPayload(rawPayload);
+        console.log("[oref] settlementResults length:", settlementResults.length);
+        if (settlementResults.length) {
+          console.log("settlementResults:", settlementResults);
+        }
+      },
+    });
+    if (onAlertReady && normalized) {
+      try {
+        onAlertReady(normalized, json);
+      } catch (e) {
+        console.error("[oref] onAlertReady error:", e?.message ?? e);
       }
     }
-    lastHash = h;
   }
 
   async function loop() {
     while (true) {
       try {
         await pollOnce();
-        await sleep(3000);
+        await sleep(pollIntervalMs);
       } catch (e) {
         console.error("poll error:", e?.message ?? e);
         await sleep(5000);
@@ -52,4 +76,4 @@ function createOrefPoller(deps) {
   return { pollOnce, loop };
 }
 
-module.exports = { createOrefPoller, hash };
+module.exports = { createOrefPoller };

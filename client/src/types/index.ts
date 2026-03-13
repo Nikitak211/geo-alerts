@@ -1,6 +1,5 @@
 export type { PlaceData, CityRow } from "./place";
 export type { AlertPayload, HighlightStore } from "./alert";
-export type { AlertPayload, HighlightStore } from "./alert";
 
 export type OrefAlert = {
   id: string;

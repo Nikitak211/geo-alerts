@@ -1,10 +1,11 @@
+const path = require("path");
 const {
   getAlertDateParts,
   parsePredictedTimestampLocal,
   toDateOnlyString,
 } = require("../utils/time");
 const { round2, REGION_PAYOUT_MULTIPLIER } = require("../utils/money");
-const { extractAlerts } = require("../oref/oref.parser");
+const { extractAlerts } = require(path.join(__dirname, "../../dist/ingest/oref"));
 
 function createSettlementService(deps) {
   const {

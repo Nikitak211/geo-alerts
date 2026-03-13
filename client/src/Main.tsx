@@ -6,7 +6,7 @@ import { BetDrawer } from "./components/BetDrawer/BetDrawer";
 import { BetsDrawer } from "./components/BetsDrawer/BetsDrawer";
 import { User, PaymentMethod, Bet, BetFormValues } from "./types";
 import { api, getWsUrl } from "./utils/helper";
-import { isRegion, isExcludedFromBetting } from "./utils/regionAreas";
+import { isRegion } from "./utils/regionAreas";
 import { MainMap } from "./components/MainMap/MainMap";
 
 type SelectedArea = {
@@ -72,7 +72,7 @@ export const Main: FC = () => {
     setSelectedPaymentMethodId((prev) => prev ?? pm[0]?.id ?? null);
   }, []);
 
-  const handleLoadBalance = async (paymentMethodId: string) => {
+  const handleLoadBalance = async (_paymentMethodId: string) => {
     const amount = prompt("Enter amount to deposit");
 
     if (!amount) return;
@@ -186,7 +186,8 @@ export const Main: FC = () => {
     return () => ws.close();
   }, [refreshBets]);
 
-  const effectiveAreaHeb = selectedArea?.areaHeb ?? form.areaHeb ?? form.name ?? "";
+  const effectiveAreaHeb =
+    selectedArea?.areaHeb ?? form.areaHeb ?? form.name ?? "";
 
   const canBet = useMemo(() => {
     if (!user) return false;
@@ -312,27 +313,28 @@ export const Main: FC = () => {
 
   return (
     <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      <TopToolbar
-        user={user}
-        paymentMethods={paymentMethods}
-        selectedPaymentMethodId={selectedPaymentMethodId}
-        onSelectPaymentMethod={setSelectedPaymentMethodId}
-        onLogin={handleLogin}
-        onRegister={handleRegister}
-        onLogout={handleLogout}
-        onLoadBalance={handleLoadBalance}
-        onOpenRegister={() => {
-          setModalMode("register");
-          setModalOpen(true);
-        }}
-        onOpenAddPaymentMethod={() => {
-          setModalMode("paymentMethod");
-          setModalOpen(true);
-        }}
-        onOpenBets={openBets}
-        onOpenPlaceBet={handleOpenPlaceBetFromToolbar}
-      />
-
+      {process.env?.ACTIVE_TOOLBAR ? (
+        <TopToolbar
+          user={user}
+          paymentMethods={paymentMethods}
+          selectedPaymentMethodId={selectedPaymentMethodId}
+          onSelectPaymentMethod={setSelectedPaymentMethodId}
+          onLogin={handleLogin}
+          onRegister={handleRegister}
+          onLogout={handleLogout}
+          onLoadBalance={handleLoadBalance}
+          onOpenRegister={() => {
+            setModalMode("register");
+            setModalOpen(true);
+          }}
+          onOpenAddPaymentMethod={() => {
+            setModalMode("paymentMethod");
+            setModalOpen(true);
+          }}
+          onOpenBets={openBets}
+          onOpenPlaceBet={handleOpenPlaceBetFromToolbar}
+        />
+      ) : null}
       <Box sx={{ position: "relative", flex: 1 }}>
         <MainMap />
 

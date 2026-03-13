@@ -3,9 +3,14 @@
     "target": "ES2022",
     "module": "CommonJS",
     "moduleResolution": "node",
+    "outDir": "dist",
+    "rootDir": "src",
     "verbatimModuleSyntax": false,
     "esModuleInterop": true,
     "strict": true,
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true
+  },
+  "include": ["src/ingest/**/*.ts", "src/domain/**/*.ts", "src/geo/**/*.ts", "src/api/**/*.ts", "src/ws/**/*.ts", "src/workers/**/*.ts", "src/events/**/*.ts", "src/storage/**/*.ts", "src/replay/**/*.ts", "src/tests/**/*.ts"]
 }

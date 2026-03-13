@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.env
+.env.*
+*.log
+npm-debug.log*
+.DS_Store
+coverage
+.nyc_output
+screenshots
+*.md

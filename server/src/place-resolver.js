@@ -5,6 +5,17 @@
 
 const { lookupGeoBox } = require("./geojson-lookup");
 
+/** Overrides for places that GeoJSON/Nominatim resolve incorrectly (e.g. ג'ת→קריית גת). */
+const PLACE_OVERRIDES = {
+  "ג'ת": {
+    place: "ג'ת",
+    bbox: [32.35, 32.45, 35.0, 35.08],
+    center: { lat: 32.3984, lon: 35.03558 },
+    displayName: "ג'ת (Jatt)",
+    title: "ג'ת",
+  },
+};
+
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 const CONCURRENCY = 4;
 
@@ -35,6 +46,11 @@ async function resolvePlacesToGeoBoxes(placeNames, geojsonPath) {
   for (const place of placeNames) {
     const name = typeof place === "string" ? place.trim() : "";
     if (!name) continue;
+    const override = PLACE_OVERRIDES[name];
+    if (override) {
+      result[name] = override;
+      continue;
+    }
     const fromGeo = lookupGeoBox(name, geojsonPath);
     if (fromGeo) {
       result[name] = fromGeo;
