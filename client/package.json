@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@craco/craco": "^7.1.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@microsoft/signalr": "^8.0.17",
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
     "@testing-library/dom": "^10.4.1",
@@ -23,7 +25,9 @@
     "@types/node": "^16.18.126",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "cesium": "^1.139.0",
+    "cesium": "^1.120.0",
+    "craco-cesium": "^1.2.0",
+    "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -37,9 +41,9 @@
   "scripts": {
     "postinstall": "node scripts/copy-cesium.js",
     "convert-gdb": "node scripts/convert-gdb-to-geojson.js",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test --env=jsdom",
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test --env=jsdom",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

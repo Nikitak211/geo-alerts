@@ -1,0 +1,18 @@
+# Root-level ignore when using root as build context (e.g. docker build -f client/Dockerfile .).
+# Normal builds use context ./client or ./server so their own .dockerignore apply.
+.git
+.gitignore
+# Exclude root and server .env (secrets). Keep client/.env so CRA can use REACT_APP_* at build time.
+/.env
+/.env.*
+server/.env
+server/.env.*
+*.log
+.DS_Store
+node_modules
+**/node_modules
+**/dist
+**/build
+**/coverage
+*.md
+docs

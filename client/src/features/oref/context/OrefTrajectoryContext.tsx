@@ -15,9 +15,13 @@ import { useIrBases } from "../hooks/useIrBases";
 import { useTrajectoryAlerts } from "../hooks/useTrajectoryAlerts";
 import type { TrajectoryAlertState } from "../hooks/useTrajectoryAlerts";
 import type { IranGeoJsonFeature } from "../hooks/useIranBoundary";
+import type { RawOrefPayload } from "../utils/alertNormalization";
+import type { GeoBox } from "../../../types";
 
 type OrefTrajectoryContextValue = {
   trajectoryAlerts: TrajectoryAlertState[];
+  lastUpdate: RawOrefPayload | null;
+  serverPositions: Record<string, GeoBox>;
   connected: boolean;
   clearTrajectories: () => void;
   iranGeoJson: IranGeoJsonFeature[] | null;
@@ -35,7 +39,7 @@ export function OrefTrajectoryProvider({
   const { segments: iranBoundarySegments, geojson: iranGeoJson } = useIranBoundary();
   const { geojson: lebanonGeoJson } = useLebanonBoundary();
   const irBases = useIrBases();
-  const { trajectoryAlerts, connected, clearTrajectories } = useTrajectoryAlerts(
+  const { trajectoryAlerts, lastUpdate, serverPositions, connected, clearTrajectories } = useTrajectoryAlerts(
     wsUrl,
     iranBoundarySegments,
     iranGeoJson,
@@ -43,8 +47,8 @@ export function OrefTrajectoryProvider({
     lebanonGeoJson
   );
   const value = useMemo(
-    () => ({ trajectoryAlerts, connected, clearTrajectories, iranGeoJson }),
-    [trajectoryAlerts, connected, clearTrajectories, iranGeoJson]
+    () => ({ trajectoryAlerts, lastUpdate, serverPositions, connected, clearTrajectories, iranGeoJson }),
+    [trajectoryAlerts, lastUpdate, serverPositions, connected, clearTrajectories, iranGeoJson]
   );
   return (
     <OrefTrajectoryContext.Provider value={value}>

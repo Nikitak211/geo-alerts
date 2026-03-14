@@ -9,6 +9,7 @@ export {
   AlertTrajectoryDebugLayer,
   IranBorderLayer,
   IrBasesLayer,
+  ScreenshotSender,
 } from "./components";
 export { OrefTrajectoryProvider, useOrefTrajectory } from "./context/OrefTrajectoryContext";
 export { useOrefAlerts, useTrajectoryAlerts } from "./hooks";
