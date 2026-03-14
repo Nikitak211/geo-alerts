@@ -1,36 +1,55 @@
-MIT License (with restrictions)
+Geo Alerts Source-Available License (GSAL) v1.0
 
 Copyright (c) 2025 Geo Alerts Contributors
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. Grant of Use
 
-1. The above copyright notice and this permission notice shall be included in all
-   copies or substantial portions of the Software.
+Permission is granted to any person obtaining a copy of this software
+and associated documentation files (the "Software") to use, run, and
+modify the Software for personal, educational, research, or public-benefit
+purposes only.
 
-2. LIMITATION ON PERSONAL GAIN; SELLING FORBIDDEN. Selling the Software or any
-   derivative work is strictly forbidden. The Software may not be used for
-   commercial purposes, for profit, or for personal financial or material
-   gain. Use is permitted only for personal, non-commercial, educational, or
-   public-benefit purposes. Without limiting the foregoing, you may not sell,
-   license, or monetize the Software or any derivative work, or use it to
-   provide paid services or products.
+2. Non-Commercial Use
 
-3. RESTRICTIONS. You may not:
-   (a) use the Software in any way that violates applicable law;
-   (b) use the Software to harm, harass, or endanger others;
-   (c) remove or alter any copyright or license notices;
-   (d) use the Software for military or weapons applications without explicit
-       written permission from the copyright holders.
+The Software may not be used for commercial purposes, including but not
+limited to selling the Software, offering it as part of a paid service,
+monetizing it, or using it to generate financial or material gain.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+3. No Redistribution
+
+You may not publish, distribute, sublicense, or otherwise make the
+Software or any derivative work available to third parties without
+prior written permission from the copyright holders.
+
+4. Derivative Works
+
+You may create derivative works for private internal use only.
+Derivative works may not be published or distributed without
+explicit written permission.
+
+5. Additional Restrictions
+
+You may not:
+
+a) use the Software in violation of applicable laws  
+b) use the Software to harm, harass, or endanger others  
+c) remove or alter copyright or license notices  
+d) use the Software for military or weapons applications
+   without explicit written permission from the copyright holders
+
+6. Ownership
+
+All rights not expressly granted in this license are reserved by the
+copyright holders.
+
+7. Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT.
+
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
