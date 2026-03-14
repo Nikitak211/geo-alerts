@@ -112,17 +112,21 @@ For database setup (schema/migrations), see `DOCKER.md`.
 
 ## Configuration and environment variables
 
-- **Frontend:** `client/.env` – Only variables prefixed with `REACT_APP_` are embedded in the bundle (they are public). Copy from `client/.env.example`.
-- **Root (Docker):** `.env` in the repo root is used by `docker-compose`. Copy from root `.env.example`.
-- **Backend (Node + .NET):** `server/.env` is used by the Node server. The .NET backend uses `server/appsettings.json` and `server/appsettings.Development.json`, and environment variables override (e.g. `TELEGRAM_BOT_TOKEN`, `USE_OREF_MOCK`). Copy from `server/.env.example` for local Node/.NET dev.
+**There is no single shared `.env` for the whole project.** Each part reads its own file:
 
-Do not commit real secrets; provide them via environment variables (or secure config) per environment.
+| Scope | File | Who uses it |
+|-------|------|--------------|
+| **Root** | `.env` (copy from `.env.example`) | **Docker Compose only** – when you run `docker compose up`. Not used by the client or server when run locally. |
+| **Client** | `client/.env` (copy from `client/.env.example`) | **React (CRA)** – only `REACT_APP_*` vars are embedded in the build. Used by `npm start` and `npm run build`. |
+| **Server** | `server/.env` (copy from `server/.env.example`) | **Node.js** when you run the legacy server from `server/`. .NET uses `appsettings.json` and env vars (same names when run via Docker or shell). |
 
-| Scope | Config source | Purpose |
-|-------|----------------|--------|
-| Client | `client/.env` | `REACT_APP_*`: API base, WS URL, Geoapify key, Cesium Ion token, toolbar/debug flags |
-| Root | `.env` | Docker Compose: `DATABASE_URL`, Telegram, features, betting, screenshot, geo |
-| Server | `server/.env` | Node: `DATABASE_URL`, ports, CORS, OREF mock, Telegram. .NET: overrides via env (same names where applicable) |
+Do not commit real secrets; use `.env` only locally and provide secrets via environment in each deployment.
+
+| Scope | Purpose |
+|-------|--------|
+| Root `.env` | Docker: `DATABASE_URL`, Telegram, feature flags, betting, screenshot, geo. |
+| Client `client/.env` | API base, WebSocket URL, Geoapify key, optional Cesium Ion token, toolbar/debug flags. |
+| Server `server/.env` | Node: ports, CORS, `DATABASE_URL`, OREF mock, Telegram. .NET: overridden by env when running in Docker/shell. |
 
 ---
 
@@ -178,8 +182,14 @@ Used by the backend to send messages (e.g. screenshot alerts) to a Telegram chan
 
 ## .env examples
 
-- **Root:** `.env.example` – Used as a template for the root `.env` (Docker Compose). Copy to `.env` and fill in values.
-- **Client:** `client/.env.example` – Template for `client/.env`. Copy to `client/.env` and set `PORT`, `REACT_APP_*` as needed.
-- **Server:** `server/.env.example` – Template for `server/.env` (Node and .NET local overrides). Copy to `server/.env` and set database, Telegram, OREF, etc.
+- **Root** `.env.example` → copy to `.env` in the repo root. **Only used by Docker Compose** when you run `docker compose up`. Leave unused if you never use Docker.
+- **Client** `client/.env.example` → copy to `client/.env`. Required for `npm start` / `npm run build` if you need API base, WebSocket URL, or API keys.
+- **Server** `server/.env.example` → copy to `server/.env`. Used when running the Node server locally; .NET uses `appsettings.json` and env vars.
 
-See the tables in [Configuration and environment variables](#configuration-and-environment-variables) for which variables apply to each part of the app.
+See [Configuration and environment variables](#configuration-and-environment-variables) for which file is used where.
+
+---
+
+## Cleanup note
+
+Unused client code and packages have been removed: `LayerPolygon`, `SinglePolygon`, `leafletDisplayRules`, `useCesiumCallbackProps`; and the npm packages `@mui/icons-material`, `web-vitals`, and `uuid`. The toolbar flag in the app uses `REACT_APP_ACTIVE_TOOLBAR` (set in `client/.env`) so it works with Create React App’s env handling.

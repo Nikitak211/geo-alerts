@@ -5,7 +5,7 @@ import { GenericModal } from "./components/GenericModal/GenericModal";
 import { BetDrawer } from "./components/BetDrawer/BetDrawer";
 import { BetsDrawer } from "./components/BetsDrawer/BetsDrawer";
 import { User, PaymentMethod, Bet, BetFormValues } from "./types";
-import { api } from "./utils/helper";
+import { api, getApiBase } from "./utils/helper";
 import { isRegion } from "./utils/regionAreas";
 import { MainMap } from "./components/MainMap/MainMap";
 import { useSignalRConnection } from "./contexts/SignalRConnectionContext";
@@ -23,7 +23,26 @@ const getLocalDateInputValue = () => {
   return `${year}-${month}-${day}`;
 };
 
+/** Toolbar visibility: from runtime /api/config (Docker) or build-time REACT_APP_ACTIVE_TOOLBAR (local dev). */
+function useActiveToolbar(): boolean {
+  const [active, setActive] = useState(() =>
+    !!process.env?.REACT_APP_ACTIVE_TOOLBAR
+  );
+  useEffect(() => {
+    const base = getApiBase();
+    fetch(`${base}/api/config`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data && typeof data.activeToolbar === "boolean")
+          setActive(data.activeToolbar);
+      })
+      .catch(() => {});
+  }, []);
+  return active;
+}
+
 export const Main: FC = () => {
+  const showToolbar = useActiveToolbar();
   const [user, setUser] = useState<User | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
@@ -315,7 +334,7 @@ export const Main: FC = () => {
 
   return (
     <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      {process.env?.ACTIVE_TOOLBAR ? (
+      {showToolbar ? (
         <TopToolbar
           user={user}
           paymentMethods={paymentMethods}
@@ -338,7 +357,7 @@ export const Main: FC = () => {
         />
       ) : null}
       <Box sx={{ position: "relative", flex: 1 }}>
-        <MainMap />
+        <MainMap toolbarVisible={showToolbar} />
 
         <GenericModal
           open={modalOpen}

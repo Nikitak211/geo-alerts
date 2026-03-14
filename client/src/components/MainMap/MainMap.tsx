@@ -19,7 +19,12 @@ import {
 const CITIES_URL = "/data/cities.json";
 const GEOJSON_URL = "/data/municipalities.geojson";
 
-export const MainMap: FC = memo(function MainMap() {
+type MainMapProps = { toolbarVisible?: boolean };
+
+export const MainMap: FC<MainMapProps> = memo(function MainMap({
+  toolbarVisible = false,
+}) {
+  const viewerHeight = toolbarVisible ? "90vh" : "100vh";
   return (
     <Viewer
       sceneMode={SceneMode.SCENE2D}
@@ -35,7 +40,7 @@ export const MainMap: FC = memo(function MainMap() {
       animation={false}
       style={{
         display: "inline-flex",
-        height: "90vh",
+        height: viewerHeight,
         width: "100%",
       }}
     >
