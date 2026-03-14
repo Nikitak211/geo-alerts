@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Server.Hubs;
 using Server.Realtime;
 using Server.Services;
@@ -12,8 +13,6 @@ builder.Services.PostConfigure<AppOptions>(options =>
 {
     if (Environment.GetEnvironmentVariable("ACCEPT_CLIENT_SCREENSHOTS") is { } envVal)
         options.AcceptClientScreenshots = envVal.Equals("true", StringComparison.OrdinalIgnoreCase);
-    if (Environment.GetEnvironmentVariable("App__ActiveToolbar") is { } toolbarEnv)
-        options.ActiveToolbar = toolbarEnv.Equals("true", StringComparison.OrdinalIgnoreCase);
 });
 builder.Services.Configure<OrefOptions>(options =>
 {
@@ -87,13 +86,46 @@ builder.Services.AddHostedService<OrefPollingService>();
 
 var app = builder.Build();
 
-// Log Telegram and screenshot status at startup (so Docker logs show why no screenshot/telegram)
+// Log loaded config at startup (no secrets) so Docker/logs show that envs were applied
 using (var scope = app.Services.CreateScope())
 {
+    var appOptions = scope.ServiceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
+    var orefOptions = scope.ServiceProvider.GetRequiredService<IOptions<OrefOptions>>().Value;
     var telegram = scope.ServiceProvider.GetRequiredService<ITelegramService>();
+
+    var activeToolbar = "true".Equals(appOptions.ActiveToolbar?.Trim(), StringComparison.OrdinalIgnoreCase);
+    var dbConn = builder.Configuration["ConnectionStrings:DefaultDatabase"] ?? "";
+    var dbSafe = string.IsNullOrEmpty(dbConn) ? "(not set)" : MaskConnectionString(dbConn);
+
     app.Logger.LogInformation(
-        "Screenshot: pipeline not implemented in .NET (no headless capture). Telegram: {TelegramStatus}.",
-        telegram.IsConfigured ? "configured (will send when screenshot exists)" : "not configured");
+        "Config loaded: App.CorsOrigin={CorsOrigin}, App.ClientBaseUrl={ClientBaseUrl}, App.WebSocketPath={WebSocketPath}, App.AcceptClientScreenshots={AcceptClientScreenshots}, App.ActiveToolbar={ActiveToolbar} (parsed={ActiveToolbarParsed})",
+        appOptions.CorsOrigin ?? "(null)",
+        appOptions.ClientBaseUrl ?? "(null)",
+        appOptions.WebSocketPath ?? "(null)",
+        appOptions.AcceptClientScreenshots,
+        appOptions.ActiveToolbar ?? "(null)",
+        activeToolbar);
+    app.Logger.LogInformation(
+        "Config loaded: Oref.UseMock={UseMock}, Oref.PollIntervalSeconds={PollIntervalSeconds}, Oref.OrefUrl={OrefUrl}",
+        orefOptions.UseMock,
+        orefOptions.PollIntervalSeconds,
+        string.IsNullOrEmpty(orefOptions.OrefUrl) ? "(not set)" : "(set)");
+    app.Logger.LogInformation(
+        "Config loaded: ConnectionStrings.DefaultDatabase={Db}, Telegram={TelegramStatus}",
+        dbSafe,
+        telegram.IsConfigured ? "configured" : "not configured");
+}
+
+static string MaskConnectionString(string connectionString)
+{
+    try
+    {
+        var builder = new System.Data.Common.DbConnectionStringBuilder { ConnectionString = connectionString };
+        if (builder.TryGetValue("Host", out var host) && builder.TryGetValue("Database", out var db))
+            return $"{host}/{db}";
+    }
+    catch { /* ignore */ }
+    return "(set)";
 }
 
 // Configure the HTTP request pipeline.
@@ -132,6 +164,6 @@ public sealed class AppOptions
     /// <summary>If false, accept client screenshots but do not forward to Telegram.</summary>
     public bool AcceptClientScreenshots { get; set; } = true;
 
-    /// <summary>If true, show the main app toolbar (login, wallet, bets). Exposed at GET /api/config for the client.</summary>
-    public bool ActiveToolbar { get; set; }
+    /// <summary>Config value for toolbar: "true" to show, anything else (including "") = false. String so empty env doesn't break binding.</summary>
+    public string? ActiveToolbar { get; set; }
 }
