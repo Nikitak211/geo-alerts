@@ -1,4 +1,4 @@
-MIT License
+MIT License (with restrictions)
 
 Copyright (c) 2025 Geo Alerts Contributors
 
@@ -9,8 +9,23 @@ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
+
+2. LIMITATION ON PERSONAL GAIN; SELLING FORBIDDEN. Selling the Software or any
+   derivative work is strictly forbidden. The Software may not be used for
+   commercial purposes, for profit, or for personal financial or material
+   gain. Use is permitted only for personal, non-commercial, educational, or
+   public-benefit purposes. Without limiting the foregoing, you may not sell,
+   license, or monetize the Software or any derivative work, or use it to
+   provide paid services or products.
+
+3. RESTRICTIONS. You may not:
+   (a) use the Software in any way that violates applicable law;
+   (b) use the Software to harm, harass, or endanger others;
+   (c) remove or alter any copyright or license notices;
+   (d) use the Software for military or weapons applications without explicit
+       written permission from the copyright holders.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
