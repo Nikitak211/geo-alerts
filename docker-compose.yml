@@ -1,44 +1,63 @@
+version: "3.9"
+
 services:
-  client:
+  geo-alerts:
     build:
-      context: ./client
+      context: .
       dockerfile: Dockerfile
-      args:
-        # Browser will call these on the host; map server ports in docker-compose
-        REACT_APP_API_BASE: http://localhost:8090
-        REACT_APP_WS_URL: ws://localhost:5535
+    image: geo-alerts-server
     ports:
-      - "4421:80"
-    depends_on:
-      - server
-
-  server:
-    build:
-      context: ./server
-      dockerfile: Dockerfile
-    ports:
-      - "8090:8090"   # HTTP API
-      - "5535:5535"   # WebSocket
+      - "8080:8080"
+    env_file:
+      - .env
     environment:
-      PORT: 5535
-      HTTP_PORT: 8090
-      # Allow browser at client port to call API (CORS)
-      CORS_ORIGIN: http://localhost:3000
-      # Point to Postgres (use db service or host)
-      DATABASE_URL: postgres://app:app@db:5432/bets
-    depends_on:
-      - db
+      # ASP.NET Core environment
+      ASPNETCORE_ENVIRONMENT: "Production"
 
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: app
-      POSTGRES_PASSWORD: app
-      POSTGRES_DB: bets
-    ports:
-      - "5432:5432"
+      # DB connection (from DATABASE_URL in .env)
+      ConnectionStrings__DefaultDatabase: "${DATABASE_URL}"
+
+      # App-level config (replaces HTTP_PORT, CLIENT_BASE_URL, CORS_ORIGIN)
+      App__ClientBaseUrl: "http://localhost:8080"
+      App__WebSocketPath: "/ws"
+      # CORS not usually needed in prod since SPA + API share origin; set only if required:
+      # App__CorsOrigin: "http://localhost:8080"
+
+      # Feature flags
+      Features__EnableTelegram: "${ENABLE_TELEGRAM}"
+      Features__EnableBets: "${ENABLE_BETS}"
+      App__UseOrefMock: "${USE_OREF_MOCK}"
+
+      # Betting
+      Betting__ExpiryGraceMs: "${BET_EXPIRY_GRACE_MS}"
+      Betting__ProximityExpiryGraceMs: "${BET_PROXIMITY_EXPIRY_GRACE_MS}"
+      Betting__ExpiryLoopIntervalMs: "${BET_EXPIRY_LOOP_INTERVAL_MS}"
+      Betting__RegionPayoutMultiplier: "${BET_REGION_PAYOUT_MULTIPLIER}"
+      Betting__PlatformFeeRatio: "${BET_PLATFORM_FEE_RATIO}"
+      Betting__ExactPoolShare: "${BET_EXACT_POOL_SHARE}"
+      Betting__NearWinnerMinutes: "${BET_NEAR_WINNER_MINUTES}"
+
+      # Screenshot
+      Screenshot__StoragePath: "${SCREENSHOT_STORAGE_PATH}"
+      Screenshot__PublicUrl: "${SCREENSHOT_PUBLIC_URL}"
+      Screenshot__MinAreas: "${SCREENSHOT_MIN_AREAS}"
+      Screenshot__MinMatchedSettlements: "${SCREENSHOT_MIN_MATCHED_SETTLEMENTS}"
+      Screenshot__AlertTitle: "${SCREENSHOT_ALERT_TITLE}"
+      Screenshot__CooldownMs: "${SCREENSHOT_COOLDOWN_MS}"
+
+      # Telegram
+      Telegram__BotToken: "${TELEGRAM_BOT_TOKEN}"
+      Telegram__ChannelId: "${TELEGRAM_CHANNEL_ID}"
+      Telegram__ApiId: "${TELEGRAM_API_ID}"
+      Telegram__ApiHash: "${TELEGRAM_API_HASH}"
+
+      # Geo / geocode
+      GeoData__ClientDataDir: "${CLIENT_DATA_DIR}"
+      Geocode__BaseUrl: "${GEOCODE_BASE}"
+      Geocode__NominatimUrl: "${NOMINATIM_URL}"
+
     volumes:
-      - pgdata:/var/lib/postgresql/data
-
-volumes:
-  pgdata:
+      # Mount client-data (public/data etc.) into the container
+      - ./public/data:/app/client-data:ro
+      # Optional: screenshots directory
+      - ./screenshots:/app/screenshots

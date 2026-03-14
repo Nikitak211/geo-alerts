@@ -2,7 +2,7 @@
  * Alert ingestion: OrefSocketService connects to WebSocket and emits typed alerts.
  */
 
-import { getWsUrl } from "../../../utils/helper";
+import { HubConnectionBuilder, HubConnection, HttpTransportType, LogLevel } from "@microsoft/signalr";
 import { OrefEventTypes } from "../constants/alertTypes";
 import type { RawOrefPayload } from "../utils/alertNormalization";
 import type { GeoBox } from "../../../types";
@@ -34,20 +34,33 @@ export type OrefSocketCallbacks = {
 
 /**
  * Connect to OREF WebSocket; returns unsubscribe function.
- * @param url - Optional; defaults to getWsUrl().
+ * @param url - Optional; defaults to same-origin /ws.
  */
 export function createOrefSocket(
   callbacks: OrefSocketCallbacks,
   url?: string
 ): () => void {
-  const wsUrl = url ?? getWsUrl();
+  const baseUrl =
+    url ??
+    (typeof window !== "undefined"
+      ? `${window.location.origin}/ws`
+      : "http://localhost:5206/ws");
+
+  const connection: HubConnection = new HubConnectionBuilder()
+    .withUrl(baseUrl, {
+      transport: HttpTransportType.WebSockets,
+      skipNegotiation: true,
+    })
+    .withServerTimeout(600000)
+    .withKeepAliveInterval(5000)
+    .withAutomaticReconnect()
+    .configureLogging(LogLevel.Information)
+    .build();
+
   const cbs = callbacks;
 
-  const ws = new WebSocket(wsUrl);
-
-  ws.onmessage = (ev) => {
+  connection.on("message", (raw: { type?: string; payload?: unknown }) => {
     try {
-      const raw = JSON.parse(ev.data) as { type?: string; payload?: unknown };
       if (raw.type === OrefEventTypes.OrefUpdate && raw.payload != null) {
         cbs.onMessage({
           type: OrefEventTypes.OrefUpdate,
@@ -81,10 +94,19 @@ export function createOrefSocket(
     } catch {
       // ignore
     }
+  });
+
+  (async () => {
+    try {
+      await connection.start();
+      cbs.onOpen?.();
+    } catch (e) {
+      console.error("Failed to start Oref SignalR connection", e);
+      cbs.onClose?.();
+    }
+  })();
+
+  return () => {
+    void connection.stop();
   };
-
-  ws.onopen = () => cbs.onOpen?.();
-  ws.onclose = () => cbs.onClose?.();
-
-  return () => ws.close();
 }

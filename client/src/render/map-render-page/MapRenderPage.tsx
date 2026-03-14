@@ -15,12 +15,7 @@ import {
   formatConfidenceDisplay,
 } from "./displayRules";
 import missileIconUrl from "../../components/Pin/missile.png";
-
-const API_BASE =
-  (typeof process !== "undefined" &&
-    (process as unknown as { env?: { REACT_APP_API_BASE?: string } }).env
-      ?.REACT_APP_API_BASE) ||
-  "http://localhost:8090";
+import { getApiBase, alertsApi } from "../../utils/helper";
 
 /** Zoom level for "really close" on city/area of trajectory origin. */
 const ORIGIN_ZOOM = 12;
@@ -64,6 +59,12 @@ function getFocusFromUrl(): { lat: number; lon: number } | null {
   if (!Number.isFinite(latN) || !Number.isFinite(lonN)) return null;
   return { lat: latN, lon: lonN };
 }
+
+/** Hide the info overlay when ?noOverlay=1 (for client screenshot capture). */
+function shouldHideOverlay(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("noOverlay") === "1";
+}
 /** Center map on trajectory origin (from URL focus or data); zoom stays on the location, not the full line. */
 const ZoomToOrigin: FC<{
   data: InferenceRenderData;
@@ -99,10 +100,13 @@ const MapTileWatcher: FC<{ onTileLoad: () => void }> = ({ onTileLoad }) => {
   return null;
 };
 
-function setRenderReady(): void {
+function setRenderReady(alertId: string | null): void {
   const win = window as unknown as { __RENDER_READY__?: boolean };
   win.__RENDER_READY__ = true;
   window.dispatchEvent(new CustomEvent("render-ready"));
+  if (window.parent !== window && alertId) {
+    window.parent.postMessage({ type: "render-ready", alertId }, "*");
+  }
 }
 
 export const MapRenderPage: FC = () => {
@@ -113,12 +117,13 @@ export const MapRenderPage: FC = () => {
 
   const alertId = useMemo(() => getAlertIdFromUrl(), []);
   const focusFromUrl = useMemo(() => getFocusFromUrl(), []);
+  const hideOverlay = useMemo(() => shouldHideOverlay(), []);
 
   // Fallback: always signal ready after ABSOLUTE_MAX_WAIT_MS so the worker never times out
   useEffect(() => {
-    const t = setTimeout(() => setRenderReady(), ABSOLUTE_MAX_WAIT_MS);
+    const t = setTimeout(() => setRenderReady(alertId ?? null), ABSOLUTE_MAX_WAIT_MS);
     return () => clearTimeout(t);
-  }, []);
+  }, [alertId]);
 
   useEffect(() => {
     if (!alertId) {
@@ -129,7 +134,7 @@ export const MapRenderPage: FC = () => {
     (async () => {
       try {
         const res = await fetch(
-          `${API_BASE}/api/alerts/${encodeURIComponent(alertId)}/render-data`,
+          `${getApiBase()}${alertsApi.renderDataPath(alertId)}`,
         );
         if (!res.ok) {
           setError(`Failed to load: ${res.status}`);
@@ -159,7 +164,7 @@ export const MapRenderPage: FC = () => {
       if (delayTimer) return;
       delayTimer = setTimeout(() => {
         setReady(true);
-        setRenderReady();
+        setRenderReady(alertId ?? null);
       }, RENDER_READY_DELAY_MS);
     };
 
@@ -176,43 +181,43 @@ export const MapRenderPage: FC = () => {
       if (delayTimer) clearTimeout(delayTimer);
       if (maxWaitTimer) clearTimeout(maxWaitTimer);
     };
-  }, [data, tileLoaded]);
+  }, [data, tileLoaded, alertId]);
 
   if (error) {
     return (
       <div
-        style={{
-          width: "100vw",
-          height: "100vh",
-          background: "#1a1b23",
-          color: "#EAEAEA",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "sans-serif",
-        }}
-      >
-        {error}
-      </div>
+          style={{
+            width: "100vw",
+            height: "100vh",
+            background: "#1a1b23",
+            color: "#EAEAEA",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "sans-serif",
+          }}
+        >
+          {error}
+        </div>
     );
   }
 
   if (!data) {
     return (
       <div
-        style={{
-          width: "100vw",
-          height: "100vh",
-          background: "#1a1b23",
-          color: "#EAEAEA",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "sans-serif",
-        }}
-      >
-        Loading…
-      </div>
+          style={{
+            width: "100vw",
+            height: "100vh",
+            background: "#1a1b23",
+            color: "#EAEAEA",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "sans-serif",
+          }}
+        >
+          Loading…
+        </div>
     );
   }
 
@@ -221,14 +226,14 @@ export const MapRenderPage: FC = () => {
   const impactAreaText =
     (data.impactAreaNames && data.impactAreaNames.length > 0
       ? data.impactAreaNames.join(", ")
-      : data.settlementMarkers.map((m) => m.name).join(", ")) || "—";
+      : (data.settlementMarkers ?? []).map((m) => m.name).join(", ")) || "—";
   const receivedAtText = data.receivedAt
     ? new Date(data.receivedAt).toISOString().replace("T", " ").slice(0, 19)
     : "—";
   const launchRegionText =
-    data.summary.estimatedLaunchRegion ??
-    (data.summary.confidence === "low" ? WEAK_DATA_REGION_FALLBACK : "—");
-  const confidenceText = formatConfidenceDisplay(data.summary.confidence);
+    data.summary?.estimatedLaunchRegion ??
+    (data.summary?.confidence === "low" ? WEAK_DATA_REGION_FALLBACK : "—");
+  const confidenceText = formatConfidenceDisplay(data.summary?.confidence);
 
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
@@ -251,36 +256,38 @@ export const MapRenderPage: FC = () => {
         )}
       </MapContainer>
 
-      <div
-        style={{
-          position: "absolute",
-          left: 16,
-          bottom: 16,
-          right: 16,
-          padding: "12px 16px",
-          background: "rgba(26, 27, 35, 0.92)",
-          color: "#EAEAEA",
-          fontFamily: "sans-serif",
-          fontSize: 13,
-          borderRadius: 8,
-          border: "1px solid rgba(255,255,255,0.12)",
-          display: "grid",
-          gridTemplateColumns: "auto 1fr",
-          gap: "4px 24px",
-          maxWidth: 560,
-        }}
-      >
-        <span style={{ opacity: 0.8 }}>Alert time</span>
-        <span>{receivedAtText}</span>
-        <span style={{ opacity: 0.8 }}>Impact area</span>
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-          {impactAreaText}
-        </span>
-        <span style={{ opacity: 0.8 }}>{LAUNCH_REGION_LABEL}</span>
-        <span>{launchRegionText}</span>
-        <span style={{ opacity: 0.8 }}>{CONFIDENCE_LABEL}</span>
-        <span>{confidenceText}</span>
-      </div>
+      {!hideOverlay && (
+        <div
+          style={{
+            position: "absolute",
+            left: 16,
+            bottom: 16,
+            right: 16,
+            padding: "12px 16px",
+            background: "rgba(26, 27, 35, 0.92)",
+            color: "#EAEAEA",
+            fontFamily: "sans-serif",
+            fontSize: 13,
+            borderRadius: 8,
+            border: "1px solid rgba(255,255,255,0.12)",
+            display: "grid",
+            gridTemplateColumns: "auto 1fr",
+            gap: "4px 24px",
+            maxWidth: 560,
+          }}
+        >
+          <span style={{ opacity: 0.8 }}>Alert time</span>
+          <span>{receivedAtText}</span>
+          <span style={{ opacity: 0.8 }}>Impact area</span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+            {impactAreaText}
+          </span>
+          <span style={{ opacity: 0.8 }}>{LAUNCH_REGION_LABEL}</span>
+          <span>{launchRegionText}</span>
+          <span style={{ opacity: 0.8 }}>{CONFIDENCE_LABEL}</span>
+          <span>{confidenceText}</span>
+        </div>
+      )}
 
       {ready && <meta name="render-ready" content="true" />}
     </div>

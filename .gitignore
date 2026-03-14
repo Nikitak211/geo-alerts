@@ -1,0 +1,21 @@
+# Visual Studio / Rider
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build / IDE caches
+[Cc]opilot[Ii]ndices/
+[Dd]esign[Tt]ime[Bb]uild/
+*.db-shm
+*.db-wal
+
+# Cesium (client copies or build output)
+public/cesium/
+
+# OS
+.DS_Store
+Thumbs.db
+
+.env
