@@ -18,6 +18,7 @@ public sealed class ConfigController : ControllerBase
     [HttpGet]
     public IActionResult Get()
     {
-        return Ok(new { activeToolbar = _app.ActiveToolbar });
+        var activeToolbar = "true".Equals(_app.ActiveToolbar?.Trim(), StringComparison.OrdinalIgnoreCase);
+        return Ok(new { activeToolbar });
     }
 }
