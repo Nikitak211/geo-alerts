@@ -12,6 +12,8 @@ builder.Services.PostConfigure<AppOptions>(options =>
 {
     if (Environment.GetEnvironmentVariable("ACCEPT_CLIENT_SCREENSHOTS") is { } envVal)
         options.AcceptClientScreenshots = envVal.Equals("true", StringComparison.OrdinalIgnoreCase);
+    if (Environment.GetEnvironmentVariable("App__ActiveToolbar") is { } toolbarEnv)
+        options.ActiveToolbar = toolbarEnv.Equals("true", StringComparison.OrdinalIgnoreCase);
 });
 builder.Services.Configure<OrefOptions>(options =>
 {
@@ -129,4 +131,7 @@ public sealed class AppOptions
 
     /// <summary>If false, accept client screenshots but do not forward to Telegram.</summary>
     public bool AcceptClientScreenshots { get; set; } = true;
+
+    /// <summary>If true, show the main app toolbar (login, wallet, bets). Exposed at GET /api/config for the client.</summary>
+    public bool ActiveToolbar { get; set; }
 }

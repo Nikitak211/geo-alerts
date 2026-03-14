@@ -5,6 +5,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Client build (optional; toolbar can also be set at runtime via ACTIVE_TOOLBAR + GET /api/config).
+        REACT_APP_ACTIVE_TOOLBAR: ${ACTIVE_TOOLBAR:-}
+        REACT_APP_GEOAPIFY_API_KEY: ${REACT_APP_GEOAPIFY_API_KEY:-}
+        REACT_APP_OREF_TRAJECTORY_DEBUG: ${REACT_APP_OREF_TRAJECTORY_DEBUG:-}
+        REACT_APP_CESIUM_ION_ACCESS_TOKEN: ${REACT_APP_CESIUM_ION_ACCESS_TOKEN:-}
     image: geo-alerts-server
     ports:
       - "8080:8080"
@@ -27,6 +33,8 @@ services:
       Features__EnableTelegram: "${ENABLE_TELEGRAM}"
       Features__EnableBets: "${ENABLE_BETS}"
       App__UseOrefMock: "${USE_OREF_MOCK}"
+      # Toolbar: server serves this at GET /api/config so client shows toolbar at runtime (no rebuild needed).
+      App__ActiveToolbar: "${ACTIVE_TOOLBAR}"
 
       # Betting
       Betting__ExpiryGraceMs: "${BET_EXPIRY_GRACE_MS}"

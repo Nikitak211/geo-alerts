@@ -9,8 +9,17 @@ RUN apt-get update && \
     apt-get install -y nodejs && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy repo (client/.env included so CRA sees REACT_APP_I_AM_SCREENSHOT_CLIENT etc.)
 COPY . .
+
+# React build-time env (CRA bakes these into the bundle). Pass via docker-compose build.args from root .env.
+ARG REACT_APP_ACTIVE_TOOLBAR
+ARG REACT_APP_GEOAPIFY_API_KEY
+ARG REACT_APP_OREF_TRAJECTORY_DEBUG
+ARG REACT_APP_CESIUM_ION_ACCESS_TOKEN
+ENV REACT_APP_ACTIVE_TOOLBAR=$REACT_APP_ACTIVE_TOOLBAR
+ENV REACT_APP_GEOAPIFY_API_KEY=$REACT_APP_GEOAPIFY_API_KEY
+ENV REACT_APP_OREF_TRAJECTORY_DEBUG=$REACT_APP_OREF_TRAJECTORY_DEBUG
+ENV REACT_APP_CESIUM_ION_ACCESS_TOKEN=$REACT_APP_CESIUM_ION_ACCESS_TOKEN
 
 # Build React client
 WORKDIR /src/client
