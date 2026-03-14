@@ -1,11 +1,10 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Box, Button, Paper, Typography } from "@mui/material";
-import type { AlertPayload, GeoBox, HighlightStore } from "../../types";
+import type { AlertPayload, HighlightStore } from "../../types";
 import { normalize, toBaseMunicipalityName } from "../../utils/cityNameMatching";
 import { createSirenPlayer } from "../../utils/siren";
 import { useAlertPlaces } from "../../contexts/AlertPlacesContext";
 import { useOrefTrajectory } from "../../features/oref";
-import { getWsUrl } from "../../utils/helper";
 import { GeoJsonProvider, useGeoJsonContext } from "../../contexts/GeoJsonContext";
 import { MunicipalityGeoJsonLayer } from "../MapLayer";
 
@@ -14,7 +13,6 @@ const CITIES_URL = "/data/cities.json";
 const GEOJSON_URL = "/data/municipalities.geojson";
 
 function AlertTesterContent() {
-  const wsRef = useRef<WebSocket | null>(null);
   const blinkTimeoutsRef = useRef<Record<string, number>>({});
   const sirenRef = useRef<ReturnType<typeof createSirenPlayer> | null>(null);
   const storeRef = useRef<HighlightStore>({
@@ -25,12 +23,11 @@ function AlertTesterContent() {
 
   const { getDisplayNamesForCity } = useGeoJsonContext();
   const { setPlaces, setServerPositions, clearAll } = useAlertPlaces();
-  const { clearTrajectories } = useOrefTrajectory();
+  const { lastUpdate, serverPositions, connected, clearTrajectories } = useOrefTrajectory();
 
   const [highlightedNames, setHighlightedNames] = useState<Set<string>>(
     new Set(),
   );
-  const [connected, setConnected] = useState(false);
   const [alerts, setAlerts] = useState<AlertPayload[]>([]);
   const [blinking, setBlinking] = useState<Record<string, boolean>>({});
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -130,6 +127,34 @@ function AlertTesterContent() {
     setPlaces(next);
   }, [setPlaces]);
 
+  // Sync server positions from SignalR into AlertPlacesContext for pins
+  useEffect(() => {
+    setServerPositions(serverPositions);
+  }, [serverPositions, setServerPositions]);
+
+  // Push each new oref_update from SignalR into local alerts and trigger blink/sound/highlight
+  const lastUpdateIdRef = useRef<string | number | null>(null);
+  useEffect(() => {
+    if (!lastUpdate?.id) return;
+    const id = String(lastUpdate.id);
+    if (lastUpdateIdRef.current === id) return;
+    lastUpdateIdRef.current = id;
+    const withTime: AlertPayload = {
+      id,
+      title: lastUpdate.title ?? "",
+      data: lastUpdate.data ?? [],
+      desc: lastUpdate.desc ?? "",
+      cat: lastUpdate.cat ?? "",
+      time: new Date(),
+    };
+    setAlerts((prev) => [withTime, ...prev]);
+    startBlink(id, 8000);
+    playAlertSoundRef.current();
+    if (Array.isArray(withTime.data)) {
+      for (const cityName of withTime.data) highlightCityRef.current(cityName);
+    }
+  }, [lastUpdate]);
+
   useEffect(() => {
     const now = Date.now();
     if (alerts.length === 0) {
@@ -150,42 +175,6 @@ function AlertTesterContent() {
     const id = setInterval(syncPlaces, 30_000);
     return () => clearInterval(id);
   }, [syncPlaces]);
-
-  const connect = () => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
-    const ws = new WebSocket(getWsUrl());
-    wsRef.current = ws;
-    ws.onopen = () => setConnected(true);
-    ws.onerror = () => setConnected(false);
-    ws.onmessage = (ev) => {
-      let msg: {
-        type?: string;
-        payload?: Omit<AlertPayload, "time"> | Record<string, GeoBox>;
-      };
-      try {
-        msg = JSON.parse(ev.data);
-      } catch {
-        return;
-      }
-      if (msg.type === "oref_update") {
-        const alert = msg.payload as Omit<AlertPayload, "time"> | undefined;
-        if (!alert) return;
-        const withTime: AlertPayload = { ...alert, time: new Date() };
-        setAlerts((prev) => [withTime, ...prev]);
-        startBlink(withTime.id, 8000);
-        playAlertSoundRef.current();
-        if (Array.isArray(withTime.data)) {
-          for (const cityName of withTime.data)
-            highlightCityRef.current(cityName);
-        }
-      }
-      if (msg.type === "place_positions" && msg.payload && typeof msg.payload === "object") {
-        const boxes = msg.payload as Record<string, GeoBox>;
-        setServerPositions(boxes);
-      }
-    };
-    ws.onclose = () => setConnected(false);
-  };
 
   const testAlert = async () => {
     const siren = sirenRef.current;
@@ -267,9 +256,7 @@ function AlertTesterContent() {
   };
 
   useEffect(() => {
-    connect();
     return () => {
-      wsRef.current?.close();
       Object.values(blinkTimeoutsRef.current).forEach((t) =>
         window.clearTimeout(t),
       );
@@ -321,26 +308,6 @@ function AlertTesterContent() {
             mb: 1.5,
           }}
         >
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={connect}
-            disabled={connected}
-            sx={{
-              borderColor: "rgba(234,234,234,0.5)",
-              color: "#EAEAEA",
-              "&:hover": {
-                borderColor: "#EAEAEA",
-                bgcolor: "rgba(255,255,255,0.08)",
-              },
-              "&.Mui-disabled": {
-                borderColor: "rgba(234,234,234,0.3)",
-                color: "rgba(234,234,234,0.5)",
-              },
-            }}
-          >
-            Connect WS
-          </Button>
           <Button
             size="small"
             variant="outlined"
@@ -410,8 +377,8 @@ function AlertTesterContent() {
         <Box sx={{ flex: 1, overflow: "auto", pr: 0.5 }}>
           {alerts.length === 0 ? (
             <Typography variant="body2" sx={{ color: "rgba(234,234,234,0.7)" }}>
-              No alerts yet. Click <strong>Test Alert</strong> or wait for WS
-              updates.
+              No alerts yet. Click <strong>Test Alert</strong> or wait for live
+              updates (connection is automatic).
             </Typography>
           ) : (
             alerts.map((a, index) => {

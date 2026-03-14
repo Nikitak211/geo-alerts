@@ -5,9 +5,10 @@ import { GenericModal } from "./components/GenericModal/GenericModal";
 import { BetDrawer } from "./components/BetDrawer/BetDrawer";
 import { BetsDrawer } from "./components/BetsDrawer/BetsDrawer";
 import { User, PaymentMethod, Bet, BetFormValues } from "./types";
-import { api, getWsUrl } from "./utils/helper";
+import { api } from "./utils/helper";
 import { isRegion } from "./utils/regionAreas";
 import { MainMap } from "./components/MainMap/MainMap";
+import { useSignalRConnection } from "./contexts/SignalRConnectionContext";
 
 type SelectedArea = {
   areaHeb: string;
@@ -106,17 +107,15 @@ export const Main: FC = () => {
     })();
   }, [refreshMe, loadPaymentMethods]);
 
+  const signalR = useSignalRConnection();
+
   useEffect(() => {
-    const ws = new WebSocket(getWsUrl());
+    const connection = signalR?.connection;
+    if (!connection) return;
 
-    ws.onmessage = (ev) => {
-      let msg: any;
-      try {
-        msg = JSON.parse(ev.data);
-      } catch {
-        return;
-      }
-
+    let mounted = true;
+    const handler = (msg: any) => {
+      if (!mounted) return;
       if (msg.type === "wallet_updated" && msg.payload) {
         const p = msg.payload;
         setUser((prev) => {
@@ -162,7 +161,6 @@ export const Main: FC = () => {
           ...prev,
         ]);
 
-        // refresh bets so drawer & state stay in sync
         refreshBets().catch(() => undefined);
       }
 
@@ -183,8 +181,12 @@ export const Main: FC = () => {
       }
     };
 
-    return () => ws.close();
-  }, [refreshBets]);
+    connection.on("message", handler);
+    return () => {
+      mounted = false;
+      connection.off("message", handler);
+    };
+  }, [signalR?.connection, refreshBets]);
 
   const effectiveAreaHeb =
     selectedArea?.areaHeb ?? form.areaHeb ?? form.name ?? "";

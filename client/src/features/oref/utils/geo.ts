@@ -132,6 +132,22 @@ export function principalBearingDeg(center: LonLat, points: LonLat[]): number {
   return bearingDeg;
 }
 
+/** Point-in-polygon (ray casting). Ring is array of [lon, lat]; no need to close. */
+export function pointInPolygon(point: LonLat, ring: LonLat[]): boolean {
+  const [x, y] = point;
+  const n = ring.length;
+  if (n < 3) return false;
+  let inside = false;
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
 /** Move point by distance (km) in bearing direction (degrees). */
 export function movePoint(from: LonLat, bearingDeg: number, distanceKm: number): LonLat {
   const d = distanceKm / EARTH_RADIUS_KM;

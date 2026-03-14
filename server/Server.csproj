@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Paths for the React client so we can build/copy it during publish -->
+    <SpaRoot>../client/</SpaRoot>
+    <ClientBuildDir>$(SpaRoot)build/</ClientBuildDir>
+
+    <!-- We manage SPA assets ourselves; disable static web asset compression
+         so publish does not try to pre-compress specific hashed filenames. -->
+    <CompressWebAssets>false</CompressWebAssets>
+
+    <!-- Turn off implicit static web assets & default content items so we can
+         explicitly control what goes into wwwroot without duplicate items. -->
+    <DisableImplicitStaticWebAssets>true</DisableImplicitStaticWebAssets>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
+  </ItemGroup>
+
+  <!-- Explicitly include wwwroot content in build/publish output -->
+  <ItemGroup>
+    <Content Include="wwwroot\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- Do not treat the .gitkeep placeholder as a static web asset for publish -->
+  <ItemGroup>
+    <Content Remove="wwwroot\.gitkeep" />
+  </ItemGroup>
+
+  <!-- Build the React client for Release builds (Build/Publish) -->
+  <Target Name="BuildClient" BeforeTargets="Build;Publish" Condition="'$(Configuration)' == 'Release'">
+    <Message Text="Building client app in $(SpaRoot)" Importance="high" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
+  </Target>
+
+  <!-- Copy the built client into wwwroot so it is served by ASP.NET Core -->
+  <Target Name="CopyClientBuild" AfterTargets="BuildClient" Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <ClientFiles Include="$(ClientBuildDir)**\*" />
+    </ItemGroup>
+
+    <RemoveDir Directories="wwwroot" />
+    <MakeDir Directories="wwwroot" />
+
+    <Copy
+      SourceFiles="@(ClientFiles)"
+      DestinationFiles="@(ClientFiles->'wwwroot\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

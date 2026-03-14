@@ -8,6 +8,7 @@ import "cesium/Build/Cesium/Widgets/widgets.css";
 import { Main } from "./Main";
 import { MapRenderPage } from "./render";
 import { appTheme } from "./theme";
+import { SignalRConnectionProvider } from "./contexts/SignalRConnectionContext";
 import "./index.css";
 
 Cesium.Ion.defaultAccessToken =
@@ -30,7 +31,11 @@ root.render(
   <React.StrictMode>
     <ThemeProvider theme={appTheme}>
       <CssBaseline />
-      {isRenderPage ? <MapRenderPage /> : <Main />}
+      {isRenderPage ? <MapRenderPage /> : (
+        <SignalRConnectionProvider>
+          <Main />
+        </SignalRConnectionProvider>
+      )}
     </ThemeProvider>
   </React.StrictMode>,
 );

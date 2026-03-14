@@ -5,14 +5,16 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePlaceResolver } from "../../../contexts/PlaceResolverContext";
 import { useOrefAlerts } from "./useOrefAlerts";
 import { normalizeOrefAlert } from "../utils/alertNormalization";
 import { isEligibleForTrajectory, toEligibleAlert } from "../utils/alertEligibility";
 import { computeTrajectory } from "../utils/trajectory";
-import { api } from "../../../utils/helper";
+import { alertsApi } from "../../../utils/helper";
 import type { BoundarySegment } from "../utils/iranBoundary";
 import type { IranGeoJsonFeature } from "./useIranBoundary";
 import type { LebanonGeoJsonFeature } from "./useLebanonBoundary";
+import type { GeoBox } from "../../../types";
 import type { OrefAlert } from "../types/oref.types";
 import type { TrajectoryResult } from "../types/oref.types";
 import type { ServerTrajectory } from "./useOrefAlerts";
@@ -37,10 +39,12 @@ export function useTrajectoryAlerts(
 ): {
   trajectoryAlerts: TrajectoryAlertState[];
   lastUpdate: ReturnType<typeof useOrefAlerts>["lastUpdate"];
+  serverPositions: Record<string, GeoBox>;
   connected: boolean;
   clearTrajectories: () => void;
 } {
   const { lastUpdate, serverPositions, connected, serverTrajectoryByAlertId } = useOrefAlerts(wsUrl);
+  const placeResolver = usePlaceResolver();
   const [trajectoryAlerts, setTrajectoryAlerts] = useState<TrajectoryAlertState[]>([]);
   /** Fallback: trajectory from GET /api/alerts/:id/render-data when WS inference_result not yet received (main map matches screenshot). */
   const [renderDataTrajectoryByAlertId, setRenderDataTrajectoryByAlertId] = useState<Record<string, ServerTrajectory>>({});
@@ -73,6 +77,9 @@ export function useTrajectoryAlerts(
       const box = serverPositions[name];
       if (box?.center && Number.isFinite(box.center.lat) && Number.isFinite(box.center.lon)) {
         positionByPlace[name] = { lat: box.center.lat, lon: box.center.lon };
+      } else if (placeResolver?.getCenterForPlace(name)) {
+        const c = placeResolver.getCenterForPlace(name)!;
+        positionByPlace[name] = { lat: c.lat, lon: c.lon };
       }
     }
     const normalized = normalizeOrefAlert(lastUpdate, positionByPlace);
@@ -89,9 +96,10 @@ export function useTrajectoryAlerts(
     }
     if (renderDataRetryTrigger > 0) retriedRenderDataForIdRef.current.add(id);
     fetchStartedForIdRef.current.add(id);
-    api<{ trajectoryPolyline?: [number, number][]; trajectoryTarget?: "iran" | "lebanon" }>(
-      `/api/alerts/${encodeURIComponent(id)}/render-data`
-    )
+    alertsApi.getRenderData<{
+      trajectoryPolyline?: [number, number][];
+      trajectoryTarget?: "iran" | "lebanon";
+    }>(id)
       .then((data) => {
         const poly = data?.trajectoryPolyline;
         const target = data?.trajectoryTarget ?? "iran";
@@ -112,7 +120,7 @@ export function useTrajectoryAlerts(
       .finally(() => {
         fetchStartedForIdRef.current.delete(id);
       });
-  }, [lastUpdate?.id, lastUpdate?.data, serverPositions, serverTrajectoryByAlertId, renderDataTrajectoryByAlertId, renderDataRetryTrigger]);
+  }, [lastUpdate?.id, lastUpdate?.data, serverPositions, placeResolver, serverTrajectoryByAlertId, renderDataTrajectoryByAlertId, renderDataRetryTrigger]);
 
   useEffect(() => {
     if (!lastUpdate?.id || !Array.isArray(lastUpdate.data) || lastUpdate.data.length === 0) {
@@ -121,12 +129,16 @@ export function useTrajectoryAlerts(
     const id = String(lastUpdate.id);
 
     // Use only this alert's area names for positions (each alert calculated by its own data, not shared pins).
+    // When server doesn't send place_positions (e.g. mock), resolve names from GeoJSON/cities via PlaceResolver.
     const positionByPlace: Record<string, { lat: number; lon: number }> = {};
     const alertPlaceNames = lastUpdate.data ?? [];
     for (const name of alertPlaceNames) {
       const box = serverPositions[name];
       if (box?.center && Number.isFinite(box.center.lat) && Number.isFinite(box.center.lon)) {
         positionByPlace[name] = { lat: box.center.lat, lon: box.center.lon };
+      } else if (placeResolver?.getCenterForPlace(name)) {
+        const c = placeResolver.getCenterForPlace(name)!;
+        positionByPlace[name] = { lat: c.lat, lon: c.lon };
       }
     }
 
@@ -181,7 +193,7 @@ export function useTrajectoryAlerts(
       }
       return [...prev, newItem];
     });
-  }, [lastUpdate, serverPositions, serverTrajectoryByAlertId, renderDataTrajectoryByAlertId, iranBoundarySegments, iranGeoJson, irBases, lebanonGeoJson]);
+  }, [lastUpdate, serverPositions, placeResolver, serverTrajectoryByAlertId, renderDataTrajectoryByAlertId, iranBoundarySegments, iranGeoJson, irBases, lebanonGeoJson]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -194,5 +206,5 @@ export function useTrajectoryAlerts(
     return () => clearInterval(id);
   }, []);
 
-  return { trajectoryAlerts, lastUpdate, connected, clearTrajectories };
+  return { trajectoryAlerts, lastUpdate, serverPositions, connected, clearTrajectories };
 }
