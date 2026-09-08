@@ -16,6 +16,10 @@ import {
 } from "./displayRules";
 import missileIconUrl from "../../components/Pin/missile.png";
 import { getApiBase, alertsApi } from "../../utils/helper";
+import {
+  configuredMapTiles,
+  fallbackMapTiles,
+} from "../../utils/mapTiles";
 
 /** Zoom level for "really close" on city/area of trajectory origin. */
 const ORIGIN_ZOOM = 12;
@@ -114,6 +118,7 @@ export const MapRenderPage: FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [tileLoaded, setTileLoaded] = useState(false);
+  const [tileConfig, setTileConfig] = useState(configuredMapTiles);
 
   const alertId = useMemo(() => getAlertIdFromUrl(), []);
   const focusFromUrl = useMemo(() => getFocusFromUrl(), []);
@@ -242,11 +247,20 @@ export const MapRenderPage: FC = () => {
         zoom={origin ? ORIGIN_ZOOM : FALLBACK_ZOOM}
         style={{ width: "100%", height: "100%", background: "#1a1b23" }}
         zoomControl={false}
-        attributionControl={false}
+        attributionControl
       >
         <TileLayer
-          url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png"
-          maxZoom={19}
+          key={tileConfig.provider}
+          url={tileConfig.url}
+          attribution={tileConfig.attribution}
+          maxZoom={tileConfig.maximumLevel}
+          eventHandlers={{
+            tileerror: () => {
+              if (tileConfig.provider === "stadia") {
+                setTileConfig(fallbackMapTiles);
+              }
+            },
+          }}
         />
         <ZoomToOrigin data={data} focusFromUrl={focusFromUrl} />
         <MapTileWatcher onTileLoad={() => setTileLoaded(true)} />

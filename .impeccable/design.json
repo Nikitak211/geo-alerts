@@ -1,0 +1,486 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-03T11:35:00.000Z",
+  "title": "Design System: Workout Plan",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Signal Lime",
+        "canonical": "#c6f25a",
+        "tonalRamp": [
+          "#1a2208",
+          "#2f3d0e",
+          "#4a6214",
+          "#6a8c1c",
+          "#8fb828",
+          "#c6f25a",
+          "#d9f78a",
+          "#eefcc0"
+        ]
+      },
+      "accent-ink": {
+        "role": "primary",
+        "displayName": "Accent Ink",
+        "canonical": "#10140a",
+        "tonalRamp": [
+          "#050704",
+          "#10140a",
+          "#1c2412",
+          "#2a3620",
+          "#3d4e30",
+          "#5a6e48",
+          "#8a9a78",
+          "#c8d4bc"
+        ]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Void Black",
+        "canonical": "#0a0a0c",
+        "tonalRamp": [
+          "#050506",
+          "#0a0a0c",
+          "#121214",
+          "#1c1c1e",
+          "#2c2c2e",
+          "#48484a",
+          "#a1a1a6",
+          "#f5f5f7"
+        ]
+      },
+      "bg-2": {
+        "role": "neutral",
+        "displayName": "Lift Near-Black",
+        "canonical": "#121214",
+        "tonalRamp": [
+          "#050506",
+          "#0a0a0c",
+          "#121214",
+          "#1c1c1e",
+          "#2c2c2e",
+          "#48484a",
+          "#a1a1a6",
+          "#f5f5f7"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "#1c1c1e",
+        "tonalRamp": [
+          "#0a0a0c",
+          "#121214",
+          "#1c1c1e",
+          "#2c2c2e",
+          "#3a3a3c",
+          "#636366",
+          "#a1a1a6",
+          "#f5f5f7"
+        ]
+      },
+      "panel-2": {
+        "role": "neutral",
+        "displayName": "Panel Raised",
+        "canonical": "#2c2c2e",
+        "tonalRamp": [
+          "#0a0a0c",
+          "#121214",
+          "#1c1c1e",
+          "#2c2c2e",
+          "#3a3a3c",
+          "#636366",
+          "#a1a1a6",
+          "#f5f5f7"
+        ]
+      },
+      "glass-bg": {
+        "role": "neutral",
+        "displayName": "Glass Field",
+        "canonical": "#0a0a0c",
+        "tonalRamp": [
+          "#050506",
+          "#0a0a0c",
+          "#121214",
+          "#1c1c1e",
+          "#2c2c2e",
+          "#48484a",
+          "#a1a1a6",
+          "#f5f5f7"
+        ]
+      },
+      "glass-fill": {
+        "role": "neutral",
+        "displayName": "Glass Fill",
+        "canonical": "rgba(255, 255, 255, 0.1)",
+        "tonalRamp": [
+          "rgba(255,255,255,0.03)",
+          "rgba(255,255,255,0.05)",
+          "rgba(255,255,255,0.07)",
+          "rgba(255,255,255,0.1)",
+          "rgba(255,255,255,0.14)",
+          "rgba(255,255,255,0.2)",
+          "rgba(255,255,255,0.28)",
+          "rgba(255,255,255,0.4)"
+        ]
+      },
+      "glass-fill-strong": {
+        "role": "neutral",
+        "displayName": "Glass Strong",
+        "canonical": "rgba(255, 255, 255, 0.16)",
+        "tonalRamp": [
+          "rgba(28,28,30,0.55)",
+          "rgba(36,36,38,0.6)",
+          "rgba(255, 255, 255, 0.16)",
+          "rgba(52,52,54,0.75)",
+          "rgba(60,60,62,0.82)",
+          "rgba(72,72,74,0.88)",
+          "rgba(90,90,92,0.92)",
+          "rgba(120,120,122,0.95)"
+        ]
+      },
+      "glass-fill-chip": {
+        "role": "neutral",
+        "displayName": "Glass Chip",
+        "canonical": "rgba(255, 255, 255, 0.07)",
+        "tonalRamp": [
+          "rgba(255,255,255,0.03)",
+          "rgba(255,255,255,0.05)",
+          "rgba(255,255,255,0.07)",
+          "rgba(255,255,255,0.1)",
+          "rgba(255,255,255,0.14)",
+          "rgba(255,255,255,0.2)",
+          "rgba(255,255,255,0.28)",
+          "rgba(255,255,255,0.4)"
+        ]
+      },
+      "glass-press-fill": {
+        "role": "neutral",
+        "displayName": "Glass Press",
+        "canonical": "rgba(255, 255, 255, 0.12)",
+        "tonalRamp": [
+          "rgba(255,255,255,0.04)",
+          "rgba(255,255,255,0.07)",
+          "rgba(255,255,255,0.1)",
+          "rgba(255,255,255,0.12)",
+          "rgba(255,255,255,0.16)",
+          "rgba(255,255,255,0.22)",
+          "rgba(255,255,255,0.3)",
+          "rgba(255,255,255,0.4)"
+        ]
+      },
+      "glass-border": {
+        "role": "neutral",
+        "displayName": "Specular Border",
+        "canonical": "rgba(255, 255, 255, 0.28)",
+        "tonalRamp": [
+          "rgba(255,255,255,0.08)",
+          "rgba(255,255,255,0.12)",
+          "rgba(255,255,255,0.18)",
+          "rgba(255,255,255,0.28)",
+          "rgba(255,255,255,0.38)",
+          "rgba(255,255,255,0.48)",
+          "rgba(255,255,255,0.58)",
+          "rgba(255,255,255,0.7)"
+        ]
+      },
+      "glass-highlight": {
+        "role": "neutral",
+        "displayName": "Specular Highlight",
+        "canonical": "rgba(255, 255, 255, 0.58)",
+        "tonalRamp": [
+          "rgba(255,255,255,0.14)",
+          "rgba(255,255,255,0.22)",
+          "rgba(255,255,255,0.32)",
+          "rgba(255,255,255,0.42)",
+          "rgba(255,255,255,0.5)",
+          "rgba(255,255,255,0.58)",
+          "rgba(255,255,255,0.7)",
+          "rgba(255,255,255,0.85)"
+        ]
+      },
+      "glass-rim": {
+        "role": "neutral",
+        "displayName": "Glass Rim",
+        "canonical": "rgba(255, 255, 255, 0.14)",
+        "tonalRamp": [
+          "rgba(255,255,255,0.04)",
+          "rgba(255,255,255,0.06)",
+          "rgba(255,255,255,0.1)",
+          "rgba(255,255,255,0.14)",
+          "rgba(255,255,255,0.2)",
+          "rgba(255,255,255,0.28)",
+          "rgba(255,255,255,0.4)",
+          "rgba(255,255,255,0.55)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(255, 255, 255, 0.1)",
+        "tonalRamp": [
+          "rgba(255,255,255,0.04)",
+          "rgba(255,255,255,0.06)",
+          "rgba(255,255,255,0.08)",
+          "rgba(255,255,255,0.1)",
+          "rgba(255,255,255,0.14)",
+          "rgba(255,255,255,0.2)",
+          "rgba(255,255,255,0.28)",
+          "rgba(255,255,255,0.4)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Text",
+        "canonical": "#f5f5f7",
+        "tonalRamp": [
+          "#0a0a0c",
+          "#2c2c2e",
+          "#48484a",
+          "#636366",
+          "#8e8e93",
+          "#a1a1a6",
+          "#d1d1d6",
+          "#f5f5f7"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "#a1a1a6",
+        "tonalRamp": [
+          "#2c2c2e",
+          "#3a3a3c",
+          "#48484a",
+          "#636366",
+          "#8e8e93",
+          "#a1a1a6",
+          "#c7c7cc",
+          "#e5e5ea"
+        ]
+      },
+      "danger": {
+        "role": "secondary",
+        "displayName": "Warm Danger",
+        "canonical": "#ff8f6b",
+        "tonalRamp": [
+          "#3a1810",
+          "#5c2818",
+          "#8a3c24",
+          "#b85438",
+          "#e06e50",
+          "#ff8f6b",
+          "#ffb49a",
+          "#ffd8ca"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Sticky header h1 — workout/plan page hero title."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Panel page titles (account, admin, live)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Stage exercise name and primary card titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Tips, howto copy, lede, supporting text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Pod labels, tray titles, nav labels, chrome meta."
+      }
+    },
+    "shadows": [
+      {
+        "name": "glass-sm",
+        "value": "0 4px 16px rgba(0, 0, 0, 0.4)",
+        "purpose": "Chips, secondary buttons, tray cards, lang shell."
+      },
+      {
+        "name": "glass",
+        "value": "0 12px 40px rgba(0, 0, 0, 0.55)",
+        "purpose": "Default cards, tabs, library rows."
+      },
+      {
+        "name": "glass-lg",
+        "value": "0 20px 48px rgba(0, 0, 0, 0.6)",
+        "purpose": "Stage card, floating dock, active tab."
+      },
+      {
+        "name": "glass-inset",
+        "value": "inset 0 1px 0 rgba(255, 255, 255, 0.58), inset 0 -0.5px 0 rgba(255, 255, 255, 0.06), inset 1px 0 0 rgba(255, 255, 255, 0.14), inset -1px 0 0 rgba(255, 255, 255, 0.04)",
+        "purpose": "Specular lens rim on glass surfaces."
+      }
+    ],
+    "motion": [
+      {
+        "name": "glass-ease",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Default easing for glass state transitions."
+      },
+      {
+        "name": "glass-ms",
+        "value": "180ms",
+        "purpose": "Standard glass transition duration."
+      },
+      {
+        "name": "rise",
+        "value": "220ms ease; translateY(6px) → none",
+        "purpose": "Card-body expand entrance; disabled under reduced motion."
+      },
+      {
+        "name": "press-scale",
+        "value": "scale(0.96)",
+        "purpose": "Active press feedback on buttons/chips/nav; disabled under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "library-stack",
+        "value": "420px",
+        "purpose": "Library cards go 300px tall stacked layout; card-body stacks media."
+      },
+      {
+        "name": "app-max",
+        "value": "560px",
+        "purpose": "Centered app column max width."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Lime primary CTA for mark-done and other primary actions.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">סמן בוצע</button>",
+      "css": ".ds-btn-primary { border: 0; border-radius: var(--radius-md, 14px); padding: 11px 16px; min-height: 44px; font-weight: 700; cursor: pointer; background: var(--accent, #c6f25a); color: var(--accent-ink, #10140a); box-shadow: var(--glass-shadow-sm, 0 4px 16px rgba(0,0,0,0.4)); transition: background-color 180ms cubic-bezier(0.22,1,0.36,1), transform 180ms cubic-bezier(0.22,1,0.36,1), filter 180ms cubic-bezier(0.22,1,0.36,1); font-family: var(--font, Heebo, 'IBM Plex Sans', sans-serif); } .ds-btn-primary:hover { filter: brightness(1.03); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #c6f25a); outline-offset: 3px; } .ds-btn-primary:active { transform: scale(0.96); filter: brightness(0.95); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Clear glass secondary action with specular border.",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">ביטול</button>",
+      "css": ".ds-btn-secondary { border: 1px solid var(--glass-border, rgba(255,255,255,0.28)); border-radius: var(--radius-md, 14px); padding: 11px 16px; min-height: 44px; font-weight: 700; cursor: pointer; background: var(--glass-fill, rgba(255,255,255,0.1)); color: var(--text, #f5f5f7); box-shadow: var(--glass-shadow-sm, 0 4px 16px rgba(0,0,0,0.4)), inset 0 1px 0 var(--glass-highlight, rgba(255,255,255,0.58)); backdrop-filter: blur(28px) saturate(1.3); -webkit-backdrop-filter: blur(28px) saturate(1.3); transition: background-color 180ms cubic-bezier(0.22,1,0.36,1), transform 180ms cubic-bezier(0.22,1,0.36,1); font-family: var(--font, Heebo, 'IBM Plex Sans', sans-serif); } .ds-btn-secondary:hover { background: var(--glass-press-fill, rgba(255,255,255,0.12)); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--accent, #c6f25a); outline-offset: 3px; } .ds-btn-secondary:active { transform: scale(0.96); }"
+    },
+    {
+      "name": "Muted Button",
+      "kind": "button",
+      "refersTo": "button-muted",
+      "description": "Chip-glass control with lime text for quieter accent actions.",
+      "html": "<button class=\"ds-btn-muted\" type=\"button\">בטל סימון</button>",
+      "css": ".ds-btn-muted { border: 1px solid color-mix(in srgb, var(--accent, #c6f25a) 35%, var(--glass-border, rgba(255,255,255,0.28))); border-radius: var(--radius-md, 14px); padding: 11px 16px; min-height: 44px; font-weight: 700; cursor: pointer; background: var(--glass-fill-chip, rgba(255,255,255,0.07)); color: var(--accent, #c6f25a); box-shadow: var(--glass-shadow-sm, 0 4px 16px rgba(0,0,0,0.4)), inset 0 1px 0 var(--glass-highlight, rgba(255,255,255,0.58)); backdrop-filter: blur(28px); transition: background-color 180ms cubic-bezier(0.22,1,0.36,1), transform 180ms cubic-bezier(0.22,1,0.36,1); font-family: var(--font, Heebo, 'IBM Plex Sans', sans-serif); } .ds-btn-muted:hover { background: var(--glass-press-fill, rgba(255,255,255,0.12)); } .ds-btn-muted:focus-visible { outline: 2px solid var(--accent, #c6f25a); outline-offset: 3px; } .ds-btn-muted:active { transform: scale(0.96); }"
+    },
+    {
+      "name": "Stage Done CTA",
+      "kind": "button",
+      "refersTo": "button-stage-done",
+      "description": "Full-width pill lime CTA on the workout stage card.",
+      "html": "<button class=\"ds-stage-done\" type=\"button\">סמן בוצע</button>",
+      "css": ".ds-stage-done { width: 100%; border: 0; border-radius: 999px; padding: 11px 16px; min-height: 48px; font-size: 1rem; font-weight: 700; cursor: pointer; background: var(--accent, #c6f25a); color: var(--accent-ink, #10140a); box-shadow: var(--glass-shadow-sm, 0 4px 16px rgba(0,0,0,0.4)); transition: transform 180ms cubic-bezier(0.22,1,0.36,1), filter 180ms cubic-bezier(0.22,1,0.36,1); font-family: var(--font, Heebo, 'IBM Plex Sans', sans-serif); } .ds-stage-done:hover { filter: brightness(1.03); } .ds-stage-done:focus-visible { outline: 2px solid var(--accent, #c6f25a); outline-offset: 3px; } .ds-stage-done:active { transform: scale(0.96); filter: brightness(0.95); }"
+    },
+    {
+      "name": "Field Input",
+      "kind": "input",
+      "refersTo": "field-input",
+      "description": "Strong glass text field with specular border and lime focus ring.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">מתכון</span><input class=\"ds-field-input\" type=\"text\" placeholder=\"3×12\" /></label>",
+      "css": ".ds-field { display: grid; gap: 6px; color: var(--muted, #a1a1a6); font-size: 0.85rem; font-family: var(--font, Heebo, 'IBM Plex Sans', sans-serif); } .ds-field-label { font-weight: 600; } .ds-field-input { width: 100%; border: 1px solid var(--glass-border, rgba(255,255,255,0.28)); border-radius: var(--radius-md, 14px); background: var(--glass-fill-strong, rgba(255, 255, 255, 0.16)); color: var(--text, #f5f5f7); padding: 12px 14px; min-height: 44px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.35), inset 0 1px 0 var(--glass-highlight, rgba(255,255,255,0.58)); backdrop-filter: blur(28px); font: inherit; transition: border-color 180ms cubic-bezier(0.22,1,0.36,1), box-shadow 180ms cubic-bezier(0.22,1,0.36,1); } .ds-field-input:hover { border-color: rgba(255,255,255,0.36); } .ds-field-input:focus-visible { outline: 2px solid var(--accent, #c6f25a); outline-offset: 2px; }"
+    },
+    {
+      "name": "Bottom Dock",
+      "kind": "nav",
+      "refersTo": "bottom-nav",
+      "description": "Floating liquid-glass dock; active item is solid lime.",
+      "html": "<nav class=\"ds-dock\" aria-label=\"Primary\"><button class=\"ds-nav-btn ds-nav-btn-active\" type=\"button\">אימון</button><button class=\"ds-nav-btn\" type=\"button\">ספרייה</button><button class=\"ds-nav-btn\" type=\"button\">חי</button></nav>",
+      "css": ".ds-dock { display: flex; gap: 4px; max-width: 536px; margin: 0 auto; padding: 8px; border-radius: 28px; border: 1px solid var(--glass-border, rgba(255,255,255,0.28)); background: var(--glass-fill-strong, rgba(255, 255, 255, 0.16)); box-shadow: var(--glass-shadow-lg, 0 20px 48px rgba(0,0,0,0.6)), inset 0 1px 0 var(--glass-highlight, rgba(255,255,255,0.58)), inset 0 -0.5px 0 rgba(255,255,255,0.06); backdrop-filter: blur(48px) saturate(1.3); -webkit-backdrop-filter: blur(48px) saturate(1.3); font-family: var(--font, Heebo, 'IBM Plex Sans', sans-serif); } .ds-nav-btn { flex: 1 1 0; border: 1px solid transparent; background: transparent; color: var(--muted, #a1a1a6); border-radius: 999px; padding: 10px 4px; min-height: 44px; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: background-color 180ms cubic-bezier(0.22,1,0.36,1), color 180ms cubic-bezier(0.22,1,0.36,1), transform 180ms cubic-bezier(0.22,1,0.36,1); } .ds-nav-btn:hover { background: var(--glass-press-fill, rgba(255,255,255,0.12)); } .ds-nav-btn:focus-visible { outline: 2px solid var(--accent, #c6f25a); outline-offset: 2px; } .ds-nav-btn:active { transform: scale(0.96); } .ds-nav-btn-active { color: var(--accent-ink, #10140a); background: var(--accent, #c6f25a); box-shadow: var(--glass-shadow-sm, 0 4px 16px rgba(0,0,0,0.4)); } .ds-nav-btn-active:hover { background: var(--accent, #c6f25a); filter: brightness(1.02); }"
+    },
+    {
+      "name": "Active Tab",
+      "kind": "chip",
+      "refersTo": "tab-active",
+      "description": "Plan tab in active lime state (inactive tabs stay clear glass).",
+      "html": "<button class=\"ds-tab-active\" type=\"button\"><span class=\"ds-tab-title\">תוכנית A</span><span class=\"ds-tab-sub\">4 תרגילים</span></button>",
+      "css": ".ds-tab-active { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; text-align: start; padding: 12px 12px 11px; border: 1px solid transparent; border-radius: var(--radius-lg, 18px); background: var(--accent, #c6f25a); color: var(--accent-ink, #10140a); cursor: pointer; box-shadow: var(--glass-shadow-lg, 0 20px 48px rgba(0,0,0,0.6)); font-family: var(--font, Heebo, 'IBM Plex Sans', sans-serif); transition: filter 180ms cubic-bezier(0.22,1,0.36,1), transform 180ms cubic-bezier(0.22,1,0.36,1); } .ds-tab-title { font-weight: 800; font-size: 0.95rem; } .ds-tab-sub { font-size: 0.75rem; opacity: 0.85; } .ds-tab-active:hover { filter: brightness(1.02); } .ds-tab-active:focus-visible { outline: 2px solid var(--accent, #c6f25a); outline-offset: 3px; } .ds-tab-active:active { filter: brightness(0.95); transform: scale(0.98); }"
+    },
+    {
+      "name": "Stage Card",
+      "kind": "card",
+      "refersTo": "stage-card",
+      "description": "Dominant Dock & Stage glass card for the active exercise.",
+      "html": "<article class=\"ds-stage-card\"><div class=\"ds-stage-media\" aria-hidden=\"true\"></div><div class=\"ds-stage-body\"><h2 class=\"ds-stage-title\">סקוואט גביע</h2><p class=\"ds-stage-muscle\"><span class=\"ds-stage-dot\"></span>רגליים</p><button class=\"ds-stage-done\" type=\"button\">סמן בוצע</button></div></article>",
+      "css": ".ds-stage-card { border: 1px solid var(--glass-border, rgba(255,255,255,0.28)); border-radius: calc(var(--radius, 22px) + 4px); background: var(--glass-fill-strong, rgba(255, 255, 255, 0.16)); box-shadow: var(--glass-shadow-lg, 0 20px 48px rgba(0,0,0,0.6)), inset 0 1px 0 var(--glass-highlight, rgba(255,255,255,0.58)), inset 0 -0.5px 0 rgba(255,255,255,0.06); backdrop-filter: blur(48px) saturate(1.3); -webkit-backdrop-filter: blur(48px) saturate(1.3); overflow: hidden; color: var(--text, #f5f5f7); font-family: var(--font, Heebo, 'IBM Plex Sans', sans-serif); max-width: 360px; } .ds-stage-media { aspect-ratio: 16 / 11; background: linear-gradient(160deg, #1a1a1c, #0a0a0c 60%, rgba(198,242,90,0.08)); border-bottom: 1px solid rgba(255,255,255,0.2); } .ds-stage-body { display: grid; gap: 12px; padding: 16px 16px 18px; } .ds-stage-title { margin: 0; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; } .ds-stage-muscle { margin: 0; display: inline-flex; align-items: center; gap: 8px; color: var(--muted, #a1a1a6); font-size: 0.88rem; } .ds-stage-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent, #c6f25a); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #c6f25a) 25%, transparent); } .ds-stage-done { width: 100%; border: 0; border-radius: 999px; padding: 11px 16px; min-height: 48px; font-size: 1rem; font-weight: 700; cursor: pointer; background: var(--accent, #c6f25a); color: var(--accent-ink, #10140a); } .ds-stage-done:hover { filter: brightness(1.03); } .ds-stage-done:focus-visible { outline: 2px solid var(--accent, #c6f25a); outline-offset: 3px; } .ds-stage-done:active { transform: scale(0.96); }"
+    },
+    {
+      "name": "Library Card",
+      "kind": "card",
+      "refersTo": "lib-card",
+      "description": "Catalog row — 140px desktop height, 12px gap; stacks to 300px ≤420px.",
+      "html": "<article class=\"ds-lib-card\"><div class=\"ds-lib-thumb\" aria-hidden=\"true\"></div><div class=\"ds-lib-meta\"><h2 class=\"ds-lib-title\">לחיצת חזה</h2><p class=\"ds-lib-tip\">שמרו על מרפקים בזווית של כ-45 מעלות.</p></div></article>",
+      "css": ".ds-lib-card { display: grid; grid-template-columns: 96px 1fr; gap: 12px; box-sizing: border-box; height: 140px; margin-bottom: 12px; padding: 10px; border: 1px solid var(--glass-border, rgba(255,255,255,0.28)); border-radius: var(--radius, 22px); background: var(--glass-fill, rgba(255,255,255,0.1)); box-shadow: var(--glass-shadow, 0 12px 40px rgba(0,0,0,0.55)), inset 0 1px 0 var(--glass-highlight, rgba(255,255,255,0.58)); backdrop-filter: blur(48px) saturate(1.3); color: var(--text, #f5f5f7); font-family: var(--font, Heebo, 'IBM Plex Sans', sans-serif); max-width: 420px; } .ds-lib-thumb { width: 96px; height: 120px; border-radius: var(--radius-md, 14px); background: linear-gradient(160deg, #1a1a1c, #0a0a0c); border: 1px solid var(--glass-border, rgba(255,255,255,0.28)); } .ds-lib-meta { min-width: 0; display: flex; flex-direction: column; } .ds-lib-title { margin: 0; font-size: 1rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-lib-tip { margin: 4px 0 0; color: var(--muted, #a1a1a6); font-size: 0.8rem; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } @media (max-width: 420px) { .ds-lib-card { grid-template-columns: 1fr; grid-template-rows: 160px 1fr; height: 300px; } .ds-lib-thumb { width: 100%; height: 160px; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Dock & Stage under Liquid Glass",
+    "overview": "A mobile-first, Hebrew-RTL training companion rendered as cool near-black iOS System Liquid Glass — clear refractive fills, specular rims, and a floating dock — not muddy olive frosted slabs. The workout surface is Dock & Stage: one dominant glass stage for the active exercise, a horizontal tray for what’s next, and a fixed bottom dock for app navigation.\n\nDensity stays gym-phone practical: scannable mid-set, large tap targets (44px+), and lime reserved for primary and active chrome only. Atmosphere comes from fixed radial washes on the near-black field plus layered glass, not from purple gradients or cream editorial skins.",
+    "keyCharacteristics": [
+      "Cool near-black field (#0a0a0c) with clear refractive glass and specular inset rims",
+      "Dock & Stage workout composition (stage → tray → floating dock)",
+      "Lime #c6f25a only for primary CTAs and active selection",
+      "Heebo / IBM Plex Sans (+ Hebrew) stack; RTL-first",
+      "Library card contract: 140px desktop / 300px ≤420px + 12px gap",
+      "Opaque panel fallback under prefers-reduced-transparency"
+    ],
+    "rules": [
+      {
+        "name": "The Lime Rarity Rule",
+        "body": "Lime appears only on primary actions and true active/selected chrome. Never wash backgrounds, glass fills, or large surfaces with accent.",
+        "section": "colors"
+      },
+      {
+        "name": "The Clear Glass Rule",
+        "body": "Glass is cool and refractive (blur 48px / 28px, saturate 1.9) with specular inset rims — not olive-tinted or heavily frosted mud.",
+        "section": "colors"
+      },
+      {
+        "name": "The Hebrew-First Stack Rule",
+        "body": "Always keep Heebo + IBM Plex Sans Hebrew in the stack; do not substitute Inter/Roboto/system-only for UI chrome.",
+        "section": "typography"
+      },
+      {
+        "name": "The Reduced-Transparency Rule",
+        "body": "Under prefers-reduced-transparency: reduce, glass fills map to opaque --panel / --panel-2, blur tokens go to 0, and backdrop-filter is removed on chrome and glass components.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Reduced-Motion Rule",
+        "body": "Press-scale transforms and card-body rise animation disable under prefers-reduced-motion: reduce.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep lime (#c6f25a) only on primary CTAs and active/selected chrome.",
+      "Do preserve library card heights 140px / 300px (≤420px) and 12px gap in both CSS and LibraryView constants.",
+      "Do use clear cool glass fills with specular inset rims and the documented blur/saturate tokens.",
+      "Do provide opaque --panel / --panel-2 fallbacks when prefers-reduced-transparency is set.",
+      "Do keep the Heebo / IBM Plex Sans (+ Hebrew) stack and RTL-first layout.",
+      "Do keep 44px+ tap targets on primary controls and the floating dock clear of content via app bottom padding."
+    ],
+    "donts": [
+      "Don't reintroduce muddy olive / frosted green glass panels.",
+      "Don't wash backgrounds or large surfaces with lime; rarity is the signal.",
+      "Don't break the Dock & Stage workout composition (stage + tray + floating dock) into a dashboard of equal cards.",
+      "Don't change the library card size contract without updating both CSS and LibraryView constants together.",
+      "Don't ship glass-only UI without the reduced-transparency opaque path.",
+      "Don't swap in Inter, Roboto, Arial, or purple-on-white / cream-serif default AI skins."
+    ]
+  }
+}

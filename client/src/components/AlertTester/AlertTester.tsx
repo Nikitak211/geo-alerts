@@ -1,9 +1,9 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Box, Button, Paper, Typography } from "@mui/material";
 import type { AlertPayload, HighlightStore } from "../../types";
 import { normalize, toBaseMunicipalityName } from "../../utils/cityNameMatching";
 import { createSirenPlayer } from "../../utils/siren";
 import { useAlertPlaces } from "../../contexts/AlertPlacesContext";
+import { useOrefAlertUi } from "../../contexts/OrefAlertUiContext";
 import { useOrefTrajectory } from "../../features/oref";
 import { GeoJsonProvider, useGeoJsonContext } from "../../contexts/GeoJsonContext";
 import { MunicipalityGeoJsonLayer } from "../MapLayer";
@@ -23,7 +23,9 @@ function AlertTesterContent() {
 
   const { getDisplayNamesForCity } = useGeoJsonContext();
   const { setPlaces, setServerPositions, clearAll } = useAlertPlaces();
-  const { lastUpdate, serverPositions, connected, clearTrajectories } = useOrefTrajectory();
+  const { lastUpdate, serverPositions, connected, clearTrajectories } =
+    useOrefTrajectory();
+  const { publish } = useOrefAlertUi();
 
   const [highlightedNames, setHighlightedNames] = useState<Set<string>>(
     new Set(),
@@ -70,16 +72,16 @@ function AlertTesterContent() {
   }, [soundEnabled]);
   playAlertSoundRef.current = playAlertSound;
 
-  const enableSound = async () => {
+  const enableSound = useCallback(async () => {
     if (!sirenRef.current) sirenRef.current = createSirenPlayer();
     if (!sirenRef.current) return;
     await sirenRef.current.unlock();
     setSoundEnabled(true);
-  };
+  }, []);
 
-  const disableSound = () => {
+  const disableSound = useCallback(() => {
     setSoundEnabled(false);
-  };
+  }, []);
 
   const highlightCityRef = useRef<(name: string) => void>(() => {});
   const highlightCity = useCallback(
@@ -109,12 +111,16 @@ function AlertTesterContent() {
   highlightCityRef.current = highlightCity;
 
   const clearAllCityHighlights = useCallback(() => {
-    Array.from(storeRef.current.timeoutByCity.values()).forEach((t) => window.clearTimeout(t));
+    Array.from(storeRef.current.timeoutByCity.values()).forEach((t) =>
+      window.clearTimeout(t),
+    );
     storeRef.current.timeoutByCity.clear();
     setHighlightedNames(new Set());
   }, []);
 
-  const placesMapRef = useRef<Record<string, { title: string; expiresAt: number }>>({});
+  const placesMapRef = useRef<
+    Record<string, { title: string; expiresAt: number }>
+  >({});
 
   const syncPlaces = useCallback(() => {
     const now = Date.now();
@@ -127,12 +133,10 @@ function AlertTesterContent() {
     setPlaces(next);
   }, [setPlaces]);
 
-  // Sync server positions from SignalR into AlertPlacesContext for pins
   useEffect(() => {
     setServerPositions(serverPositions);
   }, [serverPositions, setServerPositions]);
 
-  // Push each new oref_update from SignalR into local alerts and trigger blink/sound/highlight
   const lastUpdateIdRef = useRef<string | number | null>(null);
   useEffect(() => {
     if (!lastUpdate?.id) return;
@@ -176,7 +180,7 @@ function AlertTesterContent() {
     return () => clearInterval(id);
   }, [syncPlaces]);
 
-  const testAlert = async () => {
+  const testAlert = useCallback(async () => {
     const siren = sirenRef.current;
     if (siren && soundEnabled) {
       await siren.unlock();
@@ -241,9 +245,9 @@ function AlertTesterContent() {
     setAlerts((prev) => [payload, ...prev]);
     startBlink(payload.id, 8000);
     payload.data.forEach((d) => highlightCity(d));
-  };
+  }, [soundEnabled, highlightCity]);
 
-  const clearAlerts = () => {
+  const clearAlerts = useCallback(() => {
     setAlerts([]);
     clearAll();
     clearTrajectories();
@@ -253,7 +257,33 @@ function AlertTesterContent() {
       window.clearTimeout(t),
     );
     blinkTimeoutsRef.current = {};
-  };
+  }, [clearAll, clearTrajectories, clearAllCityHighlights]);
+
+  useEffect(() => {
+    publish({
+      connected,
+      alerts,
+      blinking,
+      soundEnabled,
+      ready: true,
+      testAlert,
+      clearAlerts,
+      enableSound,
+      disableSound,
+      unlockSound: handleUnlockSound,
+    });
+  }, [
+    publish,
+    connected,
+    alerts,
+    blinking,
+    soundEnabled,
+    testAlert,
+    clearAlerts,
+    enableSound,
+    disableSound,
+    handleUnlockSound,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -263,206 +293,31 @@ function AlertTesterContent() {
       blinkTimeoutsRef.current = {};
       clearAllCityHighlights();
       sirenRef.current?.dispose?.();
+      publish({
+        ready: false,
+        alerts: [],
+        blinking: {},
+        connected: false,
+        testAlert: () => {},
+        clearAlerts: () => {},
+        enableSound: () => {},
+        disableSound: () => {},
+        unlockSound: () => {},
+      });
     };
-  }, []);
+  }, [clearAllCityHighlights, publish]);
 
   return (
-    <>
-      <MunicipalityGeoJsonLayer
-        geojsonUrl={GEOJSON_URL}
-        highlightedNames={highlightedNames}
-      />
-      <Paper
-        elevation={4}
-        onClickCapture={handleUnlockSound}
-        sx={{
-          position: "absolute",
-          top: 0,
-          right: 0,
-          width: 280,
-          maxWidth: "92vw",
-          height: "60vh",
-          p: 2,
-          bgcolor: "#22242a",
-          borderLeft: "1px solid rgba(255,255,255,0.12)",
-          borderBottom: "1px solid rgba(255,255,255,0.12)",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        <Typography
-          variant="h6"
-          fontWeight={700}
-          sx={{ color: "#EAEAEA", mb: 1.5 }}
-        >
-          Oref Alert
-        </Typography>
-
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 1,
-            alignItems: "center",
-            mb: 1.5,
-          }}
-        >
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={testAlert}
-            sx={{
-              borderColor: "rgba(234,234,234,0.5)",
-              color: "#EAEAEA",
-              "&:hover": {
-                borderColor: "#EAEAEA",
-                bgcolor: "rgba(255,255,255,0.08)",
-              },
-            }}
-          >
-            Test Alert
-          </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={clearAlerts}
-            sx={{
-              borderColor: "rgba(234,234,234,0.5)",
-              color: "#EAEAEA",
-              "&:hover": {
-                borderColor: "#EAEAEA",
-                bgcolor: "rgba(255,255,255,0.08)",
-              },
-            }}
-          >
-            Clear
-          </Button>
-          <Button
-            size="small"
-            variant={soundEnabled ? "contained" : "outlined"}
-            onClick={soundEnabled ? disableSound : enableSound}
-            sx={
-              soundEnabled
-                ? {
-                    bgcolor: "rgba(255,255,255,0.2)",
-                    color: "#EAEAEA",
-                    "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
-                  }
-                : {
-                    borderColor: "rgba(234,234,234,0.5)",
-                    color: "#EAEAEA",
-                    "&:hover": {
-                      borderColor: "#EAEAEA",
-                      bgcolor: "rgba(255,255,255,0.08)",
-                    },
-                  }
-            }
-          >
-            {soundEnabled ? "Disable Sound" : "Enable Sound"}
-          </Button>
-          <Typography
-            variant="body2"
-            component="span"
-            sx={{
-              color: connected ? "#2ef369" : "#f31616",
-              fontWeight: 700,
-              ml: 0.5,
-            }}
-          >
-            {connected ? "🟢 connected" : "🔴 disconnected"}
-          </Typography>
-        </Box>
-
-        <Box sx={{ flex: 1, overflow: "auto", pr: 0.5 }}>
-          {alerts.length === 0 ? (
-            <Typography variant="body2" sx={{ color: "rgba(234,234,234,0.7)" }}>
-              No alerts yet. Click <strong>Test Alert</strong> or wait for live
-              updates (connection is automatic).
-            </Typography>
-          ) : (
-            alerts.map((a, index) => {
-              const isNew = !!blinking[a.id];
-              const time = a.time?.toLocaleTimeString?.() ?? "";
-              return (
-                <Paper
-                  key={`${a.id}-${a.time?.getTime?.() ?? index}-${index}`}
-                  variant="outlined"
-                  className={isNew ? "alert-card-new" : ""}
-                  sx={{
-                    p: 1.25,
-                    mb: 1,
-                    bgcolor: isNew ? "rgba(255,59,59,0.15)" : "#2d2f36",
-                    borderColor: isNew
-                      ? "rgba(255,59,59,0.6)"
-                      : "rgba(255,255,255,0.12)",
-                    borderLeftWidth: isNew ? 4 : 1,
-                    borderLeftStyle: "solid",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                      mb: 0.5,
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 700,
-                        px: 0.75,
-                        py: 0.25,
-                        borderRadius: 999,
-                        bgcolor: isNew ? "#ff3b3b" : "rgba(0,0,0,0.4)",
-                        color: isNew ? "#111" : "#EAEAEA",
-                      }}
-                    >
-                      {isNew ? "NEW" : "ALERT"}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      fontWeight={800}
-                      sx={{ color: "#EAEAEA", flex: 1 }}
-                    >
-                      {a.title}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ color: "rgba(234,234,234,0.7)" }}
-                    >
-                      {time}
-                    </Typography>
-                  </Box>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "rgba(234,234,234,0.85)", display: "block" }}
-                  >
-                    {a.desc}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "rgba(234,234,234,0.8)" }}
-                  >
-                    <strong>Locations:</strong> {a.data.join(", ")}
-                  </Typography>
-                </Paper>
-              );
-            })
-          )}
-        </Box>
-      </Paper>
-    </>
+    <MunicipalityGeoJsonLayer
+      geojsonUrl={GEOJSON_URL}
+      highlightedNames={highlightedNames}
+    />
   );
 }
 
 function AlertTester() {
   return (
-    <GeoJsonProvider
-      citiesUrl={CITIES_URL}
-      geojsonUrl={GEOJSON_URL}
-    >
+    <GeoJsonProvider citiesUrl={CITIES_URL} geojsonUrl={GEOJSON_URL}>
       <AlertTesterContent />
     </GeoJsonProvider>
   );

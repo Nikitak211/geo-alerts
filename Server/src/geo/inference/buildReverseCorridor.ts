@@ -56,7 +56,10 @@ export function halfSpreadDegFromCluster(
   const latSpan = maxLat - minLat;
   const lonSpan = maxLon - minLon;
   const hasNorthSouthSpread = latSpan > lonSpan * 1.2;
-  let halfSpreadDeg = options.spreadDeg;
+  let halfSpreadDeg =
+    cluster.matchedSettlements.length <= 1
+      ? options.minSpreadDeg
+      : options.spreadDeg;
   if (hasNorthSouthSpread) halfSpreadDeg += 6;
   halfSpreadDeg += cluster.radiusKm * options.spreadPerRadiusKm;
   return Math.max(

@@ -11,6 +11,7 @@ import {
   Chip,
 } from "@mui/material";
 import type { Bet, BetStatus } from "../../types";
+import { tactical } from "../../theme";
 
 const TABS: { key: BetStatus | "all"; label: string }[] = [
   { key: "all", label: "All" },
@@ -96,9 +97,12 @@ export function BetsDrawer(props: {
         sx: {
           width: { xs: "92vw", sm: 420 },
           maxWidth: 420,
-          bgcolor: "#22242a",
+          bgcolor: tactical.panel,
+          borderLeft: `1px solid ${tactical.hairline}`,
+          borderRadius: 0,
         },
       }}
+      transitionDuration={220}
     >
       <Box
         sx={{
@@ -113,18 +117,20 @@ export function BetsDrawer(props: {
           alignItems="center"
           justifyContent="space-between"
           px={2}
-          py={1.5}
-          borderBottom={1}
-          borderColor="divider"
+          py={1.25}
+          borderBottom={`1px solid ${tactical.hairline}`}
         >
-          <Typography variant="h6" fontWeight={700}>
+          <Typography
+            variant="subtitle2"
+            sx={{ letterSpacing: "0.08em", color: tactical.phosphor }}
+          >
             Bets
           </Typography>
           <IconButton
             onClick={props.onClose}
             aria-label="close"
             size="small"
-            sx={{ color: "#EAEAEA" }}
+            sx={{ color: tactical.phosphor, borderRadius: "2px" }}
           >
             ✕
           </IconButton>
@@ -136,9 +142,8 @@ export function BetsDrawer(props: {
           gap={1}
           flexWrap="wrap"
           px={2}
-          py={1.5}
-          borderBottom={1}
-          borderColor="divider"
+          py={1.25}
+          borderBottom={`1px solid ${tactical.hairline}`}
         >
           <ToggleButtonGroup
             value={tab}
@@ -156,7 +161,7 @@ export function BetsDrawer(props: {
           <Button
             size="small"
             disabled={busy}
-            sx={{ color: "#EAEAEA" }}
+            sx={{ color: tactical.phosphor, fontSize: "0.7rem" }}
             onClick={async () => {
               setBusy(true);
               try {
@@ -180,10 +185,13 @@ export function BetsDrawer(props: {
               <Paper
                 key={String(b.id)}
                 variant="outlined"
+                elevation={0}
                 sx={{
-                  p: 1.5,
-                  mb: 1.5,
-                  borderColor: "divider",
+                  p: 1.25,
+                  mb: 1.25,
+                  borderColor: tactical.hairline,
+                  borderRadius: "3px",
+                  bgcolor: tactical.gunmetal,
                 }}
               >
                 <Box

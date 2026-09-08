@@ -1,0 +1,8 @@
+{
+  "id": "landing-desktop-comp",
+  "surface": "landing",
+  "viewport": { "width": 1440, "height": 900 },
+  "asset": ".impeccable/mocks/landing-desktop-comp.webp",
+  "world": "marketing-light-lime",
+  "notes": "Apex marketing hero — Logo, Try free, Account, Subscribe pill; dual CTAs; large preview panel. Not gym Liquid Glass."
+}

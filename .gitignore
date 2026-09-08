@@ -8,6 +8,8 @@
 # Build / IDE caches
 [Cc]opilot[Ii]ndices/
 [Dd]esign[Tt]ime[Bb]uild/
+[Bb]in/
+[Oo]bj/
 *.db-shm
 *.db-wal
 

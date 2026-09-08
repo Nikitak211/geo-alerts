@@ -120,7 +120,7 @@ export function useTrajectoryAlerts(
       .finally(() => {
         fetchStartedForIdRef.current.delete(id);
       });
-  }, [lastUpdate?.id, lastUpdate?.data, serverPositions, placeResolver, serverTrajectoryByAlertId, renderDataTrajectoryByAlertId, renderDataRetryTrigger]);
+  }, [lastUpdate, serverPositions, placeResolver, serverTrajectoryByAlertId, renderDataTrajectoryByAlertId, renderDataRetryTrigger]);
 
   useEffect(() => {
     if (!lastUpdate?.id || !Array.isArray(lastUpdate.data) || lastUpdate.data.length === 0) {

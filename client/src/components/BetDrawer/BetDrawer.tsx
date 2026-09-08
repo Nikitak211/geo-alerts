@@ -13,6 +13,7 @@ import {
 import { BetFormValues, SelectedArea, Wallet } from "../../types";
 import { isRegion, isExcludedFromBetting } from "../../utils/regionAreas";
 import { useOrefAreas } from "../../utils/useOrefAreas";
+import { tactical } from "../../theme";
 
 const isValidHHMM = (v: string) => /^\d{2}:\d{2}$/.test(v);
 
@@ -55,7 +56,7 @@ export const BetDrawer: FC<{
 
   return (
     <Paper
-      elevation={8}
+      elevation={0}
       sx={{
         position: "absolute",
         right: 12,
@@ -64,22 +65,24 @@ export const BetDrawer: FC<{
         maxWidth: "calc(100vw - 24px)",
         p: 2,
         zIndex: 1300,
-        bgcolor: "#22242a",
-        "& .MuiInputBase-input": { color: "#EAEAEA" },
-        "& .MuiInputLabel-root": { color: "rgba(234, 234, 234, 0.7)" },
-        "& .MuiInputLabel-root.Mui-focused": { color: "#EAEAEA" },
+        bgcolor: tactical.panel,
+        border: `1px solid ${tactical.hairline}`,
+        borderRadius: "3px",
+        "& .MuiInputBase-input": { color: tactical.phosphor },
+        "& .MuiInputLabel-root": { color: tactical.phosphorMuted },
+        "& .MuiInputLabel-root.Mui-focused": { color: tactical.phosphor },
         "& .MuiOutlinedInput-notchedOutline": {
-          borderColor: "rgba(234, 234, 234, 0.5)",
+          borderColor: tactical.hairlineStrong,
         },
         "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
-          borderColor: "rgba(234, 234, 234, 0.8)",
+          borderColor: tactical.phosphorMuted,
         },
         "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
           {
-            borderColor: "#EAEAEA",
+            borderColor: tactical.olive,
           },
-        "& .MuiFormHelperText-root": { color: "rgba(234, 234, 234, 0.7)" },
-        "& .MuiSvgIcon-root": { color: "#EAEAEA" },
+        "& .MuiFormHelperText-root": { color: tactical.phosphorMuted },
+        "& .MuiSvgIcon-root": { color: tactical.phosphor },
       }}
     >
       <Box
@@ -88,14 +91,17 @@ export const BetDrawer: FC<{
         justifyContent="space-between"
         mb={1.5}
       >
-        <Typography variant="subtitle1" fontWeight={700} color="text.primary">
+        <Typography
+          variant="subtitle2"
+          sx={{ letterSpacing: "0.06em", color: tactical.phosphor }}
+        >
           Bet on area
         </Typography>
         <Button
           size="small"
           onClick={props.onClose}
           aria-label="close"
-          sx={{ color: "#EAEAEA", minWidth: 0 }}
+          sx={{ color: tactical.phosphor, minWidth: 0 }}
         >
           ✕
         </Button>
@@ -127,14 +133,14 @@ export const BetDrawer: FC<{
                 placeholder="Type to filter, then select..."
                 error={!!areasError}
                 helperText={areasError ?? undefined}
-                sx={{ "& .MuiInputBase-input": { color: "#EAEAEA" } }}
+                sx={{ "& .MuiInputBase-input": { color: tactical.phosphor } }}
               />
             )}
             sx={{
-              "& .MuiOutlinedInput-root": { color: "#EAEAEA" },
-              "& .MuiInputLabel-root": { color: "rgba(234, 234, 234, 0.7)" },
-              "& .MuiAutocomplete-popupIndicator": { color: "#EAEAEA" },
-              "& .MuiAutocomplete-clearIndicator": { color: "#EAEAEA" },
+              "& .MuiOutlinedInput-root": { color: tactical.phosphor },
+              "& .MuiInputLabel-root": { color: tactical.phosphorMuted },
+              "& .MuiAutocomplete-popupIndicator": { color: tactical.phosphor },
+              "& .MuiAutocomplete-clearIndicator": { color: tactical.phosphor },
             }}
           />
         </Box>
@@ -149,9 +155,10 @@ export const BetDrawer: FC<{
           sx={{
             mt: 0.5,
             mb: 1,
-            bgcolor: "rgba(255, 152, 0, 0.12)",
-            color: "#ffb74d",
-            "& .MuiAlert-icon": { color: "#ffb74d" },
+            bgcolor: "rgba(201, 162, 39, 0.12)",
+            color: tactical.amber,
+            border: `1px solid ${tactical.hairline}`,
+            "& .MuiAlert-icon": { color: tactical.amber },
           }}
         >
           This area cannot be used for betting.
@@ -163,9 +170,10 @@ export const BetDrawer: FC<{
           sx={{
             mt: 0.5,
             mb: 1,
-            bgcolor: "rgba(33, 150, 243, 0.12)",
-            color: "#90caf9",
-            "& .MuiAlert-icon": { color: "#90caf9" },
+            bgcolor: "rgba(107, 124, 58, 0.12)",
+            color: tactical.phosphor,
+            border: `1px solid ${tactical.hairline}`,
+            "& .MuiAlert-icon": { color: tactical.olive },
           }}
         >
           This area is a region (not a city/settlement). Winning payout is lower
@@ -239,8 +247,8 @@ export const BetDrawer: FC<{
             }
             size="small"
             sx={{
-              color: "#EAEAEA",
-              "&.Mui-checked": { color: "#EAEAEA" },
+              color: tactical.phosphorMuted,
+              "&.Mui-checked": { color: tactical.olive },
             }}
           />
         }
@@ -254,11 +262,13 @@ export const BetDrawer: FC<{
 
       <Paper
         variant="outlined"
+        elevation={0}
         sx={{
           mt: 1.5,
           p: 1,
-          bgcolor: "#2d2f36",
-          borderColor: "divider",
+          bgcolor: tactical.gunmetal,
+          borderColor: tactical.hairline,
+          borderRadius: "3px",
         }}
       >
         <Typography
@@ -292,7 +302,12 @@ export const BetDrawer: FC<{
       {predictedInPast && (
         <Alert
           severity="warning"
-          sx={{ mt: 1, bgcolor: "rgba(255, 152, 0, 0.12)", color: "#ffb74d" }}
+          sx={{
+            mt: 1,
+            bgcolor: "rgba(201, 162, 39, 0.12)",
+            color: tactical.amber,
+            border: `1px solid ${tactical.hairline}`,
+          }}
         >
           Cannot place a bet for a time in the past.
         </Alert>

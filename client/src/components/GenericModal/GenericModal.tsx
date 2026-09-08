@@ -7,6 +7,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { tactical } from "../../theme";
 
 type ModalMode = "register" | "paymentMethod";
 
@@ -60,23 +61,28 @@ export function GenericModal(props: {
       }}
     >
       <Paper
+        elevation={0}
         sx={{
           width: 380,
           maxWidth: "100%",
           p: 2,
-          bgcolor: "#2d2f36",
-          border: "1px solid rgba(255,255,255,0.12)",
+          bgcolor: tactical.panel,
+          border: `1px solid ${tactical.hairline}`,
+          borderRadius: "3px",
         }}
       >
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-          <Typography variant="h6" fontWeight={700} color="text.primary">
+          <Typography
+            variant="subtitle2"
+            sx={{ letterSpacing: "0.06em", color: tactical.phosphor }}
+          >
             {title}
           </Typography>
           <Button
             size="small"
             onClick={props.onClose}
             aria-label="close"
-            sx={{ color: "#EAEAEA", minWidth: 0 }}
+            sx={{ color: tactical.phosphor, minWidth: 0 }}
           >
             ✕
           </Button>
@@ -94,13 +100,6 @@ export function GenericModal(props: {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="email"
                 margin="normal"
-                sx={{
-                  "& .MuiInputBase-input": { color: "#EAEAEA" },
-                  "& .MuiInputLabel-root": { color: "rgba(234,234,234,0.7)" },
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(234,234,234,0.5)",
-                  },
-                }}
               />
               <TextField
                 fullWidth
@@ -111,24 +110,12 @@ export function GenericModal(props: {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="password"
                 margin="normal"
-                sx={{
-                  "& .MuiInputBase-input": { color: "#EAEAEA" },
-                  "& .MuiInputLabel-root": { color: "rgba(234,234,234,0.7)" },
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(234,234,234,0.5)",
-                  },
-                }}
               />
               <Button
                 fullWidth
                 variant="contained"
                 disabled={busy}
-                sx={{
-                  mt: 2,
-                  bgcolor: "rgba(255,255,255,0.15)",
-                  color: "#EAEAEA",
-                  "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
-                }}
+                sx={{ mt: 2 }}
                 onClick={async () => {
                   setErr(null);
                   setBusy(true);
@@ -158,24 +145,12 @@ export function GenericModal(props: {
                 onChange={(e) => setLabel(e.target.value)}
                 placeholder='e.g. "Visa **** 4242"'
                 margin="normal"
-                sx={{
-                  "& .MuiInputBase-input": { color: "#EAEAEA" },
-                  "& .MuiInputLabel-root": { color: "rgba(234,234,234,0.7)" },
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(234,234,234,0.5)",
-                  },
-                }}
               />
               <Button
                 fullWidth
                 variant="contained"
                 disabled={busy}
-                sx={{
-                  mt: 2,
-                  bgcolor: "rgba(255,255,255,0.15)",
-                  color: "#EAEAEA",
-                  "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
-                }}
+                sx={{ mt: 2 }}
                 onClick={async () => {
                   setErr(null);
                   setBusy(true);

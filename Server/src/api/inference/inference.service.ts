@@ -27,7 +27,11 @@ import type { LonLat } from "../../domain/alerts/types";
 
 const POLYLINE_SEGMENTS = 16;
 
-/** Max trajectory length (km) when using corridor fallback (no principal bearing). */
+/**
+ * Max trajectory length (km) when using corridor fallback (no principal bearing, < 10 positions).
+ * Kept at 1300 km for the short-corridor case — this differs from the principal-bearing fallback
+ * (2500 km) which is handled inside computeTrajectoryAssumption.
+ */
 const EXTEND_MAX_KM = 1300;
 
 /** Fallback point inside Iran (screenshot/link) when computed point is in sea or outside border. Central Iran, lon/lat. */

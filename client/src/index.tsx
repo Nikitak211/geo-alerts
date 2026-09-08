@@ -11,8 +11,10 @@ import { appTheme } from "./theme";
 import { SignalRConnectionProvider } from "./contexts/SignalRConnectionContext";
 import "./index.css";
 
-Cesium.Ion.defaultAccessToken =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI2MzA5YzVjMS1hZTVhLTQ3ZWItYjgxZi03NDE1ODczY2IxZGMiLCJpZCI6MTM3MDU2LCJpYXQiOjE2ODM0NDc1MDB9.HZYhRN5oGy_Yf3EKBxBNEKcS_ihgZwiMsC_QJflVKKg";
+const _cesiumIonToken = process.env.REACT_APP_CESIUM_ION_ACCESS_TOKEN;
+if (_cesiumIonToken) {
+  Cesium.Ion.defaultAccessToken = _cesiumIonToken;
+}
 
 (window as any).CESIUM_BASE_URL = "/cesium/";
 

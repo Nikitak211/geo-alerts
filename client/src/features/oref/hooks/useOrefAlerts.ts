@@ -31,6 +31,9 @@ function normalizeRaw(raw: { type?: string; Type?: string; payload?: unknown; Pa
   return { type, payload };
 }
 
+/** Batch high-frequency alerts: debounce window for oref_update and place_positions (ms). */
+const ALERT_DEBOUNCE_MS = 150;
+
 export function useOrefAlerts(wsUrl?: string): UseOrefAlertsResult {
   const [lastUpdate, setLastUpdate] = useState<RawOrefPayload | null>(null);
   const [serverPositions, setServerPositions] = useState<Record<string, GeoBox>>({});
@@ -39,18 +42,54 @@ export function useOrefAlerts(wsUrl?: string): UseOrefAlertsResult {
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const signalR = useSignalRConnection();
 
+  // Debounce refs — coalesce rapid-fire server messages into a single React state flush.
+  const pendingUpdateRef = useRef<RawOrefPayload | null>(null);
+  const updateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingPositionsRef = useRef<Record<string, GeoBox> | null>(null);
+  const positionsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const connected = signalR
     ? signalR.connectionState === HubConnectionState.Connected
     : connectedFallback;
 
   useEffect(() => {
+    function flushUpdate() {
+      if (pendingUpdateRef.current !== null) {
+        setLastUpdate(pendingUpdateRef.current);
+        pendingUpdateRef.current = null;
+      }
+    }
+    function scheduleUpdate(payload: RawOrefPayload) {
+      pendingUpdateRef.current = payload;
+      if (updateTimerRef.current) clearTimeout(updateTimerRef.current);
+      updateTimerRef.current = setTimeout(flushUpdate, ALERT_DEBOUNCE_MS);
+    }
+
+    function flushPositions() {
+      if (pendingPositionsRef.current !== null) {
+        const snapshot = pendingPositionsRef.current;
+        setServerPositions(() => ({ ...snapshot }));
+        pendingPositionsRef.current = null;
+      }
+    }
+    function schedulePositions(record: Record<string, GeoBox>) {
+      pendingPositionsRef.current = record;
+      if (positionsTimerRef.current) clearTimeout(positionsTimerRef.current);
+      positionsTimerRef.current = setTimeout(flushPositions, ALERT_DEBOUNCE_MS);
+    }
+
+    function clearDebounceTimers() {
+      if (updateTimerRef.current) { clearTimeout(updateTimerRef.current); updateTimerRef.current = null; }
+      if (positionsTimerRef.current) { clearTimeout(positionsTimerRef.current); positionsTimerRef.current = null; }
+    }
+
     const connection = signalR?.connection;
     if (connection) {
       const handler = (raw: { type?: string; Type?: string; payload?: unknown; Payload?: unknown }) => {
         const { type, payload } = normalizeRaw(raw);
         try {
           if (type === OrefEventTypes.OrefUpdate && payload != null) {
-            setLastUpdate(payload as RawOrefPayload);
+            scheduleUpdate(payload as RawOrefPayload);
           } else if (
             type === OrefEventTypes.PlacePositions &&
             payload != null &&
@@ -64,8 +103,9 @@ export function useOrefAlerts(wsUrl?: string): UseOrefAlertsResult {
                     .map((b) => [String((b as GeoBox).place), b as GeoBox])
                 )
               : (p as Record<string, GeoBox>);
-            setServerPositions(() => ({ ...record }));
+            schedulePositions(record);
           } else if (type === OrefEventTypes.InferenceResult && payload != null && typeof payload === "object") {
+            // inference_result is rare (one per alert); no debounce needed
             const pl = payload as { trajectoryPolyline?: [number, number][]; trajectoryTarget?: "iran" | "lebanon"; alertSummary?: { id: string } };
             if (pl.trajectoryPolyline?.length && pl.alertSummary?.id) {
               setServerTrajectoryByAlertId((prev) => ({
@@ -84,6 +124,7 @@ export function useOrefAlerts(wsUrl?: string): UseOrefAlertsResult {
       connection.on("message", handler);
       return () => {
         connection.off("message", handler);
+        clearDebounceTimers();
       };
     }
 
@@ -91,9 +132,9 @@ export function useOrefAlerts(wsUrl?: string): UseOrefAlertsResult {
       {
         onMessage: (msg) => {
           if (msg.type === OrefEventTypes.OrefUpdate && msg.payload) {
-            setLastUpdate(msg.payload);
+            scheduleUpdate(msg.payload);
           } else if (msg.type === OrefEventTypes.PlacePositions && msg.payload) {
-            setServerPositions(() => ({ ...msg.payload }));
+            schedulePositions({ ...msg.payload });
           } else if (msg.type === OrefEventTypes.InferenceResult && msg.payload?.trajectoryPolyline?.length) {
             const id = msg.payload.alertSummary?.id;
             if (id) {
@@ -115,6 +156,7 @@ export function useOrefAlerts(wsUrl?: string): UseOrefAlertsResult {
     return () => {
       unsubscribeRef.current?.();
       unsubscribeRef.current = null;
+      clearDebounceTimers();
     };
   }, [wsUrl, signalR?.connection]);
 

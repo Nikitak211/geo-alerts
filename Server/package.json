@@ -4,11 +4,12 @@
   "main": "index.js",
   "scripts": {
     "test": "node ./mock-oref-ws.js",
-    "test:unit": "npm run build && node --test dist/tests/settlements/settlementResolver.test.js dist/tests/clustering/clusterAlerts.test.js dist/tests/inference/buildReverseCorridor.test.js dist/tests/inference/rankCandidates.test.js dist/tests/inference/runInference.test.js",
+    "test:unit": "npm run build && node --test dist/tests/settlements/settlementResolver.test.js dist/tests/clustering/clusterAlerts.test.js dist/tests/inference/buildReverseCorridor.test.js dist/tests/inference/rankCandidates.test.js dist/tests/inference/runInference.test.js dist/tests/geo/trajectoryAssumption.test.js dist/tests/bets/settlementMinute.test.js",
     "build": "tsc",
     "prestart": "npm run build",
     "start": "node ./src/server.js",
     "test:geocode": "node ./scripts/test-geocode.js",
+    "test:e2e:mobile": "node ./scripts/verify-mobile-map.js",
     "screenshot": "node dist/workers/screenshot/screenshotWorker.js",
     "replay": "node dist/replay/replayRunner.js",
     "replay:range": "node dist/replay/replayRunner.js"

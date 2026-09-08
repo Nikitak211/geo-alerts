@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Server.Hubs;
 using Server.Realtime;
 using Server.Services;
+using Server.Services.News;
 using Server.Services.Telegram;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -81,6 +82,12 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddSingleton<IAlertsNotifier, AlertsNotifier>();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient(nameof(GdeltNewsService), client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("geo-alerts-news/1.0");
+});
+builder.Services.AddSingleton<IGdeltNewsService, GdeltNewsService>();
 builder.Services.AddSingleton<ITelegramService, TelegramService>();
 builder.Services.AddHostedService<OrefPollingService>();
 
