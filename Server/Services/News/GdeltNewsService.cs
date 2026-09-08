@@ -26,6 +26,7 @@ public sealed class GdeltNewsService : IGdeltNewsService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<GdeltNewsService> _logger;
     private readonly object _gate = new();
+    private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
     private IReadOnlyList<NewsItemDto>? _cache;
     private DateTimeOffset _cacheAt = DateTimeOffset.MinValue;
@@ -45,39 +46,57 @@ public sealed class GdeltNewsService : IGdeltNewsService
                 return _cache;
         }
 
-        var wait = MinUpstreamInterval - (DateTimeOffset.UtcNow - _lastUpstream);
-        if (wait > TimeSpan.Zero)
-            await Task.Delay(wait, ct);
-
+        await _refreshLock.WaitAsync(ct);
         try
         {
-            var client = _httpClientFactory.CreateClient(nameof(GdeltNewsService));
-            IReadOnlyList<NewsItemDto> items = Array.Empty<NewsItemDto>();
-
-            var docJson = await TryGetJsonAsync(client, DocUrl, ct);
-            _lastUpstream = DateTimeOffset.UtcNow;
-            if (docJson is not null)
-                items = ParseArtList(docJson.RootElement);
-
-            if (items.Count == 0)
-                _logger.LogWarning("GDELT upstream empty; returning no news items");
-
             lock (_gate)
             {
-                _cache = items;
-                _cacheAt = DateTimeOffset.UtcNow;
+                if (_cache is not null && DateTimeOffset.UtcNow - _cacheAt < CacheTtl)
+                    return _cache;
             }
 
-            return items;
+            var wait = MinUpstreamInterval - (DateTimeOffset.UtcNow - _lastUpstream);
+            if (wait > TimeSpan.Zero)
+                await Task.Delay(wait, ct);
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient(nameof(GdeltNewsService));
+                IReadOnlyList<NewsItemDto> items = Array.Empty<NewsItemDto>();
+
+                using var docJson = await TryGetJsonAsync(client, DocUrl, ct);
+                _lastUpstream = DateTimeOffset.UtcNow;
+                if (docJson is null)
+                    throw new HttpRequestException("GDELT upstream did not return valid JSON");
+                items = ParseArtList(docJson.RootElement);
+
+                if (items.Count == 0)
+                    _logger.LogWarning("GDELT upstream empty; returning no news items");
+
+                lock (_gate)
+                {
+                    _cache = items;
+                    _cacheAt = DateTimeOffset.UtcNow;
+                }
+
+                return items;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GDELT news fetch failed");
+                var snapshot = SnapshotOrEmpty();
+                if (snapshot.Count > 0)
+                    return snapshot;
+                throw;
+            }
         }
-        catch (OperationCanceledException)
+        finally
         {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "GDELT news fetch failed");
-            return SnapshotOrEmpty();
+            _refreshLock.Release();
         }
     }
 
@@ -132,9 +151,6 @@ public sealed class GdeltNewsService : IGdeltNewsService
             var url = GetString(props, "url") ?? GetString(props, "html") ?? "";
             var image = GetString(props, "shareimage") ?? GetString(props, "image");
             var count = GetInt(props, "count");
-            var domain = NewsItemFactory.ExtractDomain(url);
-            if (string.IsNullOrEmpty(domain))
-                domain = "gdeltproject.org";
 
             if (string.IsNullOrWhiteSpace(url))
             {
@@ -144,7 +160,7 @@ public sealed class GdeltNewsService : IGdeltNewsService
             }
 
             var title = count > 0 ? $"{name} ({count} mentions)" : name;
-            AddItem(list, seen, title, url, lat, lon, domain, image, "last 24h");
+            AddItem(list, seen, title, url, lat, lon, image, "last 24h");
         }
 
         return list;
@@ -173,12 +189,11 @@ public sealed class GdeltNewsService : IGdeltNewsService
                 continue;
 
             var url = GetString(art, "url") ?? GetString(art, "url_mobile") ?? "";
-            var domain = GetString(art, "domain") ?? NewsItemFactory.ExtractDomain(url);
             var image = GetString(art, "socialimage");
             var seenRaw = GetString(art, "seendate");
             var seenLabel = FormatSeen(seenRaw);
 
-            AddItem(list, seen, title, url, lat, lon, domain ?? "", image, seenLabel);
+            AddItem(list, seen, title, url, lat, lon, image, seenLabel);
         }
 
         return list;
@@ -202,7 +217,7 @@ public sealed class GdeltNewsService : IGdeltNewsService
                 continue;
             var name = GetString(pt, "name") ?? "World report";
             var url = GetString(pt, "url") ?? "";
-            AddItem(list, seen, name, url, lat, lon, NewsItemFactory.ExtractDomain(url), null, "last 24h");
+            AddItem(list, seen, name, url, lat, lon, null, "last 24h");
         }
         return list;
     }
@@ -214,13 +229,17 @@ public sealed class GdeltNewsService : IGdeltNewsService
         string url,
         double lat,
         double lon,
-        string domain,
         string? image,
         string seenLabel)
     {
+        var fallbackUrl = "https://api.gdeltproject.org/api/v2/doc/doc?query="
+            + Uri.EscapeDataString(title)
+            + "&mode=ArtList&format=html&timespan=1d";
+        var safeUrl = NewsItemFactory.NormalizeHttpUrl(url) ?? fallbackUrl;
+        var safeDomain = NewsItemFactory.ExtractDomain(safeUrl);
         var newsType = NewsTypeClassifier.Classify(title);
         var seenAt = DateTimeOffset.UtcNow.ToString("o", CultureInfo.InvariantCulture);
-        var id = NewsItemFactory.MakeId(url, lat, lon, title);
+        var id = NewsItemFactory.MakeId(safeUrl, lat, lon, title);
         if (!seen.Add(id))
             return;
 
@@ -228,16 +247,14 @@ public sealed class GdeltNewsService : IGdeltNewsService
         {
             Id = id,
             Title = title,
-            Summary = NewsItemFactory.MakeSummary(title, domain, seenLabel),
-            Url = string.IsNullOrWhiteSpace(url)
-                ? "https://api.gdeltproject.org/api/v2/doc/doc?query=" + Uri.EscapeDataString(title) + "&mode=ArtList&format=html&timespan=1d"
-                : url,
+            Summary = NewsItemFactory.MakeSummary(title, safeDomain, seenLabel),
+            Url = safeUrl,
             Lat = lat,
             Lon = lon,
             Type = NewsTypeClassifier.ToApiString(newsType),
             SeenAt = seenAt,
-            Domain = domain,
-            ImageUrl = string.IsNullOrWhiteSpace(image) ? null : image,
+            Domain = safeDomain,
+            ImageUrl = NewsItemFactory.NormalizeHttpUrl(image),
         });
     }
 

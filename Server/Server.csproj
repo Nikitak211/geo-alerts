@@ -49,7 +49,6 @@
       <ClientFiles Include="$(ClientBuildDir)**\*" />
     </ItemGroup>
 
-    <RemoveDir Directories="wwwroot" />
     <MakeDir Directories="wwwroot" />
 
     <Copy

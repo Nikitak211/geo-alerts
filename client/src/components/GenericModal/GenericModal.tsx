@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { tactical } from "../../theme";
 
-type ModalMode = "register" | "paymentMethod";
+type ModalMode = "login" | "register" | "paymentMethod";
 
 export function GenericModal(props: {
   open: boolean;
@@ -17,6 +17,7 @@ export function GenericModal(props: {
   title?: string;
   onClose: () => void;
 
+  onLogin?: (email: string, password: string) => Promise<void>;
   onRegister?: (email: string, password: string) => Promise<void>;
   onAddPaymentMethod?: (label: string) => Promise<void>;
   onPaymentMethodAdded?: () => Promise<void> | void;
@@ -30,6 +31,7 @@ export function GenericModal(props: {
 
   const title = useMemo(() => {
     if (props.title) return props.title;
+    if (props.mode === "login") return "Login";
     return props.mode === "register" ? "Register" : "Add payment method";
   }, [props.mode, props.title]);
 
@@ -39,7 +41,7 @@ export function GenericModal(props: {
     setErr(null);
     setBusy(false);
 
-    if (props.mode === "register") {
+    if (props.mode === "login" || props.mode === "register") {
       setEmail("");
       setPassword("");
     }
@@ -89,7 +91,7 @@ export function GenericModal(props: {
         </Box>
 
         <Box component="form" sx={{ mt: 2 }}>
-          {props.mode === "register" ? (
+          {props.mode !== "paymentMethod" ? (
             <>
               <TextField
                 fullWidth
@@ -120,10 +122,18 @@ export function GenericModal(props: {
                   setErr(null);
                   setBusy(true);
                   try {
-                    if (!props.onRegister) throw new Error("Register handler missing");
                     if (!email.trim()) throw new Error("Missing email");
                     if (password.length < 4) throw new Error("Password too short");
-                    await props.onRegister(email.trim(), password);
+                    const handler =
+                      props.mode === "login" ? props.onLogin : props.onRegister;
+                    if (!handler) {
+                      throw new Error(
+                        props.mode === "login"
+                          ? "Login handler missing"
+                          : "Register handler missing",
+                      );
+                    }
+                    await handler(email.trim(), password);
                     props.onClose();
                   } catch (e: any) {
                     setErr(e?.message ?? "Failed");
@@ -132,7 +142,7 @@ export function GenericModal(props: {
                   }
                 }}
               >
-                Register
+                {props.mode === "login" ? "Login" : "Register"}
               </Button>
             </>
           ) : (

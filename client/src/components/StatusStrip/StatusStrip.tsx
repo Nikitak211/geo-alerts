@@ -59,6 +59,7 @@ export function StatusStrip(props: {
   onRegister: (email: string, password: string) => Promise<void>;
   onLogout: () => Promise<void>;
 
+  onOpenLogin: () => void;
   onOpenRegister: () => void;
   onOpenAddPaymentMethod: () => void;
   onOpenBets: () => void;
@@ -414,6 +415,21 @@ export function StatusStrip(props: {
             sx={{
               display: { xs: "none", sm: "inline-flex" },
               height: 28,
+              px: 1,
+              fontSize: "0.7rem",
+            }}
+          >
+            Login
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            aria-label="Open login dialog"
+            onClick={props.onOpenLogin}
+            sx={{
+              display: { xs: "inline-flex", sm: "none" },
+              minWidth: 44,
+              height: 44,
               px: 1,
               fontSize: "0.7rem",
             }}

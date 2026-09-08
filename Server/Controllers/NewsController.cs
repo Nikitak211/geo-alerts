@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Server.Services.News;
 
 namespace Server.Controllers;
 
 [ApiController]
 [Route("api/news")]
+[EnableRateLimiting("news")]
 public sealed class NewsController : ControllerBase
 {
     private readonly IGdeltNewsService _news;

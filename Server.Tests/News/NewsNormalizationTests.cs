@@ -84,4 +84,27 @@ public class NewsNormalizationTests
         Assert.Contains(items, i => i.Type == "conflict");
         Assert.Contains(items, i => i.Title.Contains("Ohio", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void ParseArtList_RejectsNonHttpExternalUrls()
+    {
+        var json = """
+        {
+          "articles": [
+            {
+              "title": "Missile strike near Gaza",
+              "url": "javascript:alert(1)",
+              "socialimage": "data:image/svg+xml,<svg onload='alert(1)'/>"
+            }
+          ]
+        }
+        """;
+
+        using var doc = JsonDocument.Parse(json);
+        var item = Assert.Single(GdeltNewsService.ParseArtList(doc.RootElement));
+
+        Assert.StartsWith("https://api.gdeltproject.org/", item.Url);
+        Assert.Null(item.ImageUrl);
+        Assert.Equal("", NewsItemFactory.ExtractDomain("javascript:alert(1)"));
+    }
 }

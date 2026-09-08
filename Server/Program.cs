@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using System.Threading.RateLimiting;
 using Server.Hubs;
 using Server.Realtime;
 using Server.Services;
@@ -49,6 +50,20 @@ builder.Services.Configure<TelegramOptions>(options =>
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("news", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 builder.Services.AddSignalR(options =>
 {
     // Keepalive: server pings client every 5s so the connection never goes idle.
@@ -146,6 +161,7 @@ if (app.Environment.IsDevelopment())
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseRateLimiter();
 
 // Map API controllers under /api/*.
 app.MapControllers();

@@ -51,9 +51,9 @@ export const Main: FC = () => {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"register" | "paymentMethod">(
-    "register",
-  );
+  const [modalMode, setModalMode] = useState<
+    "login" | "register" | "paymentMethod"
+  >("register");
 
   const [selectedArea, setSelectedArea] = useState<SelectedArea | null>(null);
   const [isBetOpen, setIsBetOpen] = useState(false);
@@ -369,6 +369,10 @@ export const Main: FC = () => {
           onRegister={handleRegister}
           onLogout={handleLogout}
           onLoadBalance={handleLoadBalance}
+          onOpenLogin={() => {
+            setModalMode("login");
+            setModalOpen(true);
+          }}
           onOpenRegister={() => {
             setModalMode("register");
             setModalOpen(true);
@@ -405,6 +409,7 @@ export const Main: FC = () => {
             open={modalOpen}
             mode={modalMode}
             onClose={() => setModalOpen(false)}
+            onLogin={handleLogin}
             onRegister={handleRegister}
             onAddPaymentMethod={handleAddPaymentMethod}
           />

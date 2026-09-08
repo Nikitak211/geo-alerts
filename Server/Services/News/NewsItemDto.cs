@@ -56,10 +56,20 @@ public static class NewsItemFactory
 
     public static string ExtractDomain(string? url)
     {
-        if (string.IsNullOrWhiteSpace(url)) return "";
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return "";
+        var normalizedUrl = NormalizeHttpUrl(url);
+        if (normalizedUrl is null) return "";
+        var uri = new Uri(normalizedUrl);
         return uri.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase)
             ? uri.Host[4..]
             : uri.Host;
+    }
+
+    public static string? NormalizeHttpUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return null;
+        if (!Uri.TryCreate(url.Trim(), UriKind.Absolute, out var uri)) return null;
+        if (uri.Scheme is not ("http" or "https") || string.IsNullOrWhiteSpace(uri.Host))
+            return null;
+        return uri.AbsoluteUri;
     }
 }
