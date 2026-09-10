@@ -141,7 +141,11 @@ export function pointInPolygon(point: LonLat, ring: LonLat[]): boolean {
   for (let i = 0, j = n - 1; i < n; j = i++) {
     const [xi, yi] = ring[i];
     const [xj, yj] = ring[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
+    const crossesLatitude = (yi > y) !== (yj > y);
+    if (
+      crossesLatitude &&
+      x < ((xj - xi) * (y - yi)) / (yj - yi) + xi
+    ) {
       inside = !inside;
     }
   }

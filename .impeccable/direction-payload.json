@@ -1,0 +1,76 @@
+{
+  "title": "Choose the visual world",
+  "question": "You already pinned iOS Liquid Glass Dark — that beats the roll if you confirm it (pick Steer and type that, or say so in chat). Otherwise keep the roll, take an alternate, re-roll, or take the category standard.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Locker Mirror Bay",
+      "kicker": "THE ROLL",
+      "lineage": "Gym locker-room mirrors under cool fluorescent light",
+      "thesis": "The workout UI as a black-tile mirror: chrome edge, double reflection, cool lamp wash — glass you train in front of.",
+      "palette": ["#0a0c0e", "#1a2228", "#c8d4dc", "#7ec8ff", "#d4ff4f"],
+      "materials": ["tempered mirror glass", "chrome bezel", "black ceramic tile", "cool fluorescent wash"],
+      "viewport": "Phone: sticky glass top bar over dark tile; workout cards as mirror panes with specular top edge; lime only on primary Start/Done.",
+      "risk": "Can read cold and locker-room literal if reflections overpower the GIF catalog.",
+      "sketch": ".impeccable/sketches/assigned.webp",
+      "case": "Assigned by the roll. Strong gym audience ID; Operate clarity is high if chrome stays secondary to exercises."
+    },
+    {
+      "id": "challenger-orienteering",
+      "label": "Course Over Terrain",
+      "kicker": "CHALLENGER",
+      "lineage": "ISO orienteering map + purple course overlay",
+      "thesis": "Muscle filters are terrain; the active plan is the purple course riding above — punch controls as you complete sets.",
+      "palette": ["#f4f1e8", "#d6c8a0", "#5a6b3a", "#8b5a2b", "#6b2d8b"],
+      "materials": ["map paper", "contour ink", "course purple overlay"],
+      "viewport": "Library as map legend + terrain; active workout as numbered purple leg over the catalog ground.",
+      "risk": "Light map ground fights your dark Liquid Glass pin; mid-set phone use wants fewer map metaphors.",
+      "sketch": ".impeccable/sketches/challenger-orienteering.webp",
+      "hero": "https://impeccable.style/worlds/cards/notation-diagram-systems-orienteering-map-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/notation-diagram-systems-orienteering-map.webp",
+      "case": "Fuses poorly because PRODUCT brand commitment is dark Liquid Glass and map inks want a light paper ground."
+    },
+    {
+      "id": "challenger-teletext",
+      "label": "Catalog Pages",
+      "kicker": "CHALLENGER",
+      "lineage": "Broadcast teletext magazine grid",
+      "thesis": "Every exercise is a keyed page; the catalog is an index you punch into, not a feed you scroll.",
+      "palette": ["#000000", "#ffffff", "#ffff00", "#00ffff", "#ff0000"],
+      "materials": ["CRT black", "bitmap cells", "block mosaic"],
+      "viewport": "Rigid page header with page number; body as 40-cell rows; GIFs as mosaic blocks until focused.",
+      "risk": "Bitmap grid fights GIF-first proof and Hebrew RTL fluidity.",
+      "sketch": ".impeccable/sketches/challenger-teletext.webp",
+      "hero": "https://impeccable.style/worlds/cards/broadcast-programming-teletext-service-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/broadcast-programming-teletext-service.webp",
+      "case": "Strong Operate clarity for indexing; weak audience ID for gym/home mid-set and conflicts with refractive glass."
+    },
+    {
+      "id": "challenger-leather",
+      "label": "Leather Studio Shelf",
+      "kicker": "CHALLENGER",
+      "lineage": "Skeuomorph leather reading shelf",
+      "thesis": "Plans as bound volumes on a warm shelf; progress as a stitched seam filling in.",
+      "palette": ["#6b4a2e", "#c4a574", "#e8e0d4", "#3d2a1a", "#8a7355"],
+      "materials": ["saddle leather", "linen", "walnut", "torn paper"],
+      "viewport": "Shelf of plan spines; open a volume to the day's exercises as paper pages.",
+      "risk": "Warm skeuomorph is the opposite of dark Liquid Glass and slow for one-thumb gym use.",
+      "sketch": ".impeccable/sketches/challenger-leather.webp",
+      "hero": "https://impeccable.style/worlds/cards/digital-design-canon-skeuomorph-leather-studio-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/digital-design-canon-skeuomorph-leather-studio.webp",
+      "case": "Fuses poorly because leather/linen warmth contradicts the pinned dark glass material and gym phone context."
+    }
+  ],
+  "reroll": true,
+  "steer": true,
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "Dark fitness app done impeccably: solid panels, one neon accent, bottom tab bar, card list of exercises.",
+    "palette": ["#121212", "#1e1e1e", "#2a2a2a", "#39ff14", "#f5f5f5"],
+    "materials": ["flat dark surfaces", "subtle elevation", "system sans"],
+    "viewport": "Top title, filter chips, scrollable exercise cards, bottom tabs — the arrangement users expect from training apps.",
+    "risk": "Safe and forgettable; easy to confuse with any gym template.",
+    "sketch": ".impeccable/sketches/canon.webp"
+  }
+}

@@ -1,6 +1,7 @@
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Paper, Typography } from "@mui/material";
-import { TopToolbar } from "./components/TopToolbar/TopToolbar";
+import { StatusStrip } from "./components/StatusStrip/StatusStrip";
+import { AlertFeed } from "./components/AlertFeed/AlertFeed";
 import { GenericModal } from "./components/GenericModal/GenericModal";
 import { BetDrawer } from "./components/BetDrawer/BetDrawer";
 import { BetsDrawer } from "./components/BetsDrawer/BetsDrawer";
@@ -9,6 +10,9 @@ import { api, getApiBase } from "./utils/helper";
 import { isRegion } from "./utils/regionAreas";
 import { MainMap } from "./components/MainMap/MainMap";
 import { useSignalRConnection } from "./contexts/SignalRConnectionContext";
+import { useOrefAlerts } from "./features/oref/hooks/useOrefAlerts";
+import { OrefAlertUiProvider } from "./contexts/OrefAlertUiContext";
+import { tactical } from "./theme";
 
 type SelectedArea = {
   areaHeb: string;
@@ -47,9 +51,9 @@ export const Main: FC = () => {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"register" | "paymentMethod">(
-    "register",
-  );
+  const [modalMode, setModalMode] = useState<
+    "login" | "register" | "paymentMethod"
+  >("register");
 
   const [selectedArea, setSelectedArea] = useState<SelectedArea | null>(null);
   const [isBetOpen, setIsBetOpen] = useState(false);
@@ -127,6 +131,16 @@ export const Main: FC = () => {
   }, [refreshMe, loadPaymentMethods]);
 
   const signalR = useSignalRConnection();
+  const { lastUpdate, connected: orefConnected } = useOrefAlerts();
+  const [lastPollAt, setLastPollAt] = useState<Date | null>(null);
+
+  useEffect(() => {
+    if (lastUpdate?.id != null) {
+      setLastPollAt(new Date());
+    }
+  }, [lastUpdate?.id]);
+
+  const alertCount = lastUpdate?.data?.length ?? 0;
 
   useEffect(() => {
     const connection = signalR?.connection;
@@ -333,9 +347,20 @@ export const Main: FC = () => {
   }, [form, selectedArea, selectedPaymentMethodId, refreshMe, refreshBets]);
 
   return (
-    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+    <Box
+      sx={{
+        height: "100vh",
+        "@supports (height: 100dvh)": {
+          height: "100dvh",
+        },
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "background.default",
+        overflow: "hidden",
+      }}
+    >
       {showToolbar ? (
-        <TopToolbar
+        <StatusStrip
           user={user}
           paymentMethods={paymentMethods}
           selectedPaymentMethodId={selectedPaymentMethodId}
@@ -344,6 +369,10 @@ export const Main: FC = () => {
           onRegister={handleRegister}
           onLogout={handleLogout}
           onLoadBalance={handleLoadBalance}
+          onOpenLogin={() => {
+            setModalMode("login");
+            setModalOpen(true);
+          }}
           onOpenRegister={() => {
             setModalMode("register");
             setModalOpen(true);
@@ -354,73 +383,99 @@ export const Main: FC = () => {
           }}
           onOpenBets={openBets}
           onOpenPlaceBet={handleOpenPlaceBetFromToolbar}
+          connectionState={signalR?.connectionState ?? null}
+          connected={orefConnected}
+          alertCount={alertCount}
+          lastPollAt={lastPollAt}
         />
       ) : null}
-      <Box sx={{ position: "relative", flex: 1 }}>
-        <MainMap toolbarVisible={showToolbar} />
 
-        <GenericModal
-          open={modalOpen}
-          mode={modalMode}
-          onClose={() => setModalOpen(false)}
-          onRegister={handleRegister}
-          onAddPaymentMethod={handleAddPaymentMethod}
-        />
+      <OrefAlertUiProvider>
+      <Box
+        sx={{
+          position: "relative",
+          flex: 1,
+          display: "flex",
+          minHeight: 0,
+          overflow: "hidden",
+        }}
+      >
+        <AlertFeed />
 
-        {isBetOpen && (
-          <BetDrawer
-            selectedArea={selectedArea}
-            areaHeb={effectiveAreaHeb}
-            form={form}
-            setForm={setForm}
-            disabled={!canBet}
-            loginRequired={!user}
-            paymentRequired={!!user && !selectedPaymentMethodId}
-            wallet={user?.wallet ?? null}
-            onClose={() => {
-              setIsBetOpen(false);
-              setSelectedArea(null);
-              setForm((f) => ({ ...f, areaHeb: "" }));
-            }}
-            onSubmit={submitBet}
+        <Box sx={{ position: "relative", flex: 1, minWidth: 0, minHeight: 0 }}>
+          <MainMap toolbarVisible={showToolbar} />
+
+          <GenericModal
+            open={modalOpen}
+            mode={modalMode}
+            onClose={() => setModalOpen(false)}
+            onLogin={handleLogin}
+            onRegister={handleRegister}
+            onAddPaymentMethod={handleAddPaymentMethod}
           />
-        )}
 
-        <BetsDrawer
-          open={betsOpen}
-          bets={bets}
-          onClose={() => setBetsOpen(false)}
-          onRefresh={refreshBets}
-        />
+          {isBetOpen && (
+            <BetDrawer
+              selectedArea={selectedArea}
+              areaHeb={effectiveAreaHeb}
+              form={form}
+              setForm={setForm}
+              disabled={!canBet}
+              loginRequired={!user}
+              paymentRequired={!!user && !selectedPaymentMethodId}
+              wallet={user?.wallet ?? null}
+              onClose={() => {
+                setIsBetOpen(false);
+                setSelectedArea(null);
+                setForm((f) => ({ ...f, areaHeb: "" }));
+              }}
+              onSubmit={submitBet}
+            />
+          )}
 
-        {notifications.length > 0 && (
-          <Box
-            sx={{
-              position: "absolute",
-              left: 12,
-              bottom: 12,
-              display: "flex",
-              flexDirection: "column",
-              gap: 1,
-              maxWidth: 320,
-            }}
-          >
-            {notifications.slice(0, 3).map((n) => (
-              <Paper
-                key={n.id}
-                elevation={2}
-                sx={{
-                  p: 1.25,
-                  bgcolor: "#22242a",
-                  color: "#EAEAEA",
-                }}
-              >
-                <Typography variant="body2">{n.text}</Typography>
-              </Paper>
-            ))}
-          </Box>
-        )}
+          <BetsDrawer
+            open={betsOpen}
+            bets={bets}
+            onClose={() => setBetsOpen(false)}
+            onRefresh={refreshBets}
+          />
+
+          {notifications.length > 0 && (
+            <Box
+              sx={{
+                position: "absolute",
+                right: { xs: 8, sm: 12 },
+                bottom: {
+                  xs: "calc(60px + env(safe-area-inset-bottom))",
+                  sm: 12,
+                },
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+                maxWidth: { xs: "calc(100vw - 16px)", sm: 320 },
+                zIndex: 12,
+              }}
+            >
+              {notifications.slice(0, 3).map((n) => (
+                <Paper
+                  key={n.id}
+                  elevation={0}
+                  sx={{
+                    p: 1.25,
+                    bgcolor: tactical.panel,
+                    color: tactical.phosphor,
+                    border: `1px solid ${tactical.hairline}`,
+                    borderRadius: "3px",
+                  }}
+                >
+                  <Typography variant="body2">{n.text}</Typography>
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </Box>
       </Box>
+      </OrefAlertUiProvider>
     </Box>
   );
 };

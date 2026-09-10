@@ -19,14 +19,6 @@ export type RawWsMessage = {
   ts?: number;
 };
 
-function _isInvalidPoint(lon: number, lat: number): boolean {
-  return (
-    !Number.isFinite(lon) ||
-    !Number.isFinite(lat) ||
-    (lat === 0 && lon === 0)
-  );
-}
-
 /**
  * Parse raw oref_update payload and optional position map into normalized alert.
  * Positions array order matches data[]; use 0,0 for missing/invalid.

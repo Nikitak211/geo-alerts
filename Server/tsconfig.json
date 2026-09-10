@@ -12,5 +12,5 @@
     "declaration": true,
     "declarationMap": true
   },
-  "include": ["src/ingest/**/*.ts", "src/domain/**/*.ts", "src/geo/**/*.ts", "src/api/**/*.ts", "src/ws/**/*.ts", "src/workers/**/*.ts", "src/events/**/*.ts", "src/storage/**/*.ts", "src/replay/**/*.ts", "src/tests/**/*.ts"]
+  "include": ["src/ingest/**/*.ts", "src/domain/**/*.ts", "src/geo/**/*.ts", "src/api/**/*.ts", "src/ws/**/*.ts", "src/workers/**/*.ts", "src/events/**/*.ts", "src/storage/**/*.ts", "src/replay/**/*.ts", "src/tests/**/*.ts", "src/utils/**/*.ts"]
 }

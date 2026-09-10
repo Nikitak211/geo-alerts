@@ -1,0 +1,8 @@
+{
+  "id": "landing-mobile-comp",
+  "surface": "landing",
+  "viewport": { "width": 390, "height": 844 },
+  "asset": ".impeccable/mocks/landing-mobile-comp.webp",
+  "world": "marketing-light-lime",
+  "notes": "Mobile marketing — logo + menu; stacked Subscribe / Try free; full-bleed preview. 44px targets."
+}

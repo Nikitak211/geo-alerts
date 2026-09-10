@@ -115,15 +115,12 @@ public sealed class OrefPollingService : BackgroundService
             var response = await client.SendAsync(request, cancellationToken);
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            if (string.IsNullOrWhiteSpace(json))
+            var raw = ParseLivePayload(json);
+            if (raw is null)
                 return null;
 
-            var raw = JsonSerializer.Deserialize<JsonElement>(json);
-            // When API returns [] (no alerts), do not broadcast.
-            if (raw.ValueKind == JsonValueKind.Array)
-                return null;
             // Wrap raw API response in a payload shape the client can consume (id, title, data, desc, cat).
-            var payload = NormalizeRawOref(raw);
+            var payload = NormalizeRawOref(raw.Value);
             return payload;
         }
         catch (Exception ex)
@@ -131,6 +128,20 @@ public sealed class OrefPollingService : BackgroundService
             _logger.LogWarning(ex, "Live OREF fetch failed for {Url}", url);
             return null;
         }
+    }
+
+    /// <summary>
+    /// Parses a live OREF response. OREF can represent "no alerts" as an empty
+    /// array or as a NUL-filled body despite returning HTTP 200.
+    /// </summary>
+    public static JsonElement? ParseLivePayload(string payload)
+    {
+        var normalized = payload.Trim('\0', '\uFEFF', ' ', '\t', '\r', '\n');
+        if (normalized.Length == 0)
+            return null;
+
+        var raw = JsonSerializer.Deserialize<JsonElement>(normalized);
+        return raw.ValueKind == JsonValueKind.Array ? null : raw;
     }
 
     /// <summary>Map raw JSON to a minimal object matching client RawOrefPayload shape. Returns null if no alert data (e.g. empty data).</summary>

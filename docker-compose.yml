@@ -11,11 +11,10 @@ services:
         REACT_APP_GEOAPIFY_API_KEY: ${REACT_APP_GEOAPIFY_API_KEY:-}
         REACT_APP_OREF_TRAJECTORY_DEBUG: ${REACT_APP_OREF_TRAJECTORY_DEBUG:-}
         REACT_APP_CESIUM_ION_ACCESS_TOKEN: ${REACT_APP_CESIUM_ION_ACCESS_TOKEN:-}
+        REACT_APP_STADIA_MAPS_API_KEY: ${REACT_APP_STADIA_MAPS_API_KEY:-}
     image: geo-alerts-server
     ports:
       - "8080:8080"
-    env_file:
-      - .env
     environment:
       # ASP.NET Core environment
       ASPNETCORE_ENVIRONMENT: "Production"
@@ -24,15 +23,16 @@ services:
       ConnectionStrings__DefaultDatabase: "${DATABASE_URL}"
 
       # App-level config (replaces HTTP_PORT, CLIENT_BASE_URL, CORS_ORIGIN)
-      App__ClientBaseUrl: "http://localhost:8080"
+      App__ClientBaseUrl: "https://geo-alerts.toxic-ground-zero.com"
       App__WebSocketPath: "/ws"
       # CORS not usually needed in prod since SPA + API share origin; set only if required:
-      # App__CorsOrigin: "http://localhost:8080"
+      # App__CorsOrigin: "https://geo-alerts.toxic-ground-zero.com"
 
       # Feature flags
       Features__EnableTelegram: "${ENABLE_TELEGRAM}"
       Features__EnableBets: "${ENABLE_BETS}"
-      App__UseOrefMock: "${USE_OREF_MOCK}"
+      USE_OREF_MOCK: "${USE_OREF_MOCK}"
+      OREF_URL: "${OREF_URL}"
       # Toolbar: server serves this at GET /api/config. Use "true" or leave unset (defaults to false).
       App__ActiveToolbar: "${ACTIVE_TOOLBAR:-false}"
 

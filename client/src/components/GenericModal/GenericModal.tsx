@@ -7,8 +7,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { tactical } from "../../theme";
 
-type ModalMode = "register" | "paymentMethod";
+type ModalMode = "login" | "register" | "paymentMethod";
 
 export function GenericModal(props: {
   open: boolean;
@@ -16,6 +17,7 @@ export function GenericModal(props: {
   title?: string;
   onClose: () => void;
 
+  onLogin?: (email: string, password: string) => Promise<void>;
   onRegister?: (email: string, password: string) => Promise<void>;
   onAddPaymentMethod?: (label: string) => Promise<void>;
   onPaymentMethodAdded?: () => Promise<void> | void;
@@ -29,6 +31,7 @@ export function GenericModal(props: {
 
   const title = useMemo(() => {
     if (props.title) return props.title;
+    if (props.mode === "login") return "Login";
     return props.mode === "register" ? "Register" : "Add payment method";
   }, [props.mode, props.title]);
 
@@ -38,7 +41,7 @@ export function GenericModal(props: {
     setErr(null);
     setBusy(false);
 
-    if (props.mode === "register") {
+    if (props.mode === "login" || props.mode === "register") {
       setEmail("");
       setPassword("");
     }
@@ -60,30 +63,35 @@ export function GenericModal(props: {
       }}
     >
       <Paper
+        elevation={0}
         sx={{
           width: 380,
           maxWidth: "100%",
           p: 2,
-          bgcolor: "#2d2f36",
-          border: "1px solid rgba(255,255,255,0.12)",
+          bgcolor: tactical.panel,
+          border: `1px solid ${tactical.hairline}`,
+          borderRadius: "3px",
         }}
       >
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-          <Typography variant="h6" fontWeight={700} color="text.primary">
+          <Typography
+            variant="subtitle2"
+            sx={{ letterSpacing: "0.06em", color: tactical.phosphor }}
+          >
             {title}
           </Typography>
           <Button
             size="small"
             onClick={props.onClose}
             aria-label="close"
-            sx={{ color: "#EAEAEA", minWidth: 0 }}
+            sx={{ color: tactical.phosphor, minWidth: 0 }}
           >
             ✕
           </Button>
         </Box>
 
         <Box component="form" sx={{ mt: 2 }}>
-          {props.mode === "register" ? (
+          {props.mode !== "paymentMethod" ? (
             <>
               <TextField
                 fullWidth
@@ -94,13 +102,6 @@ export function GenericModal(props: {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="email"
                 margin="normal"
-                sx={{
-                  "& .MuiInputBase-input": { color: "#EAEAEA" },
-                  "& .MuiInputLabel-root": { color: "rgba(234,234,234,0.7)" },
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(234,234,234,0.5)",
-                  },
-                }}
               />
               <TextField
                 fullWidth
@@ -111,32 +112,28 @@ export function GenericModal(props: {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="password"
                 margin="normal"
-                sx={{
-                  "& .MuiInputBase-input": { color: "#EAEAEA" },
-                  "& .MuiInputLabel-root": { color: "rgba(234,234,234,0.7)" },
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(234,234,234,0.5)",
-                  },
-                }}
               />
               <Button
                 fullWidth
                 variant="contained"
                 disabled={busy}
-                sx={{
-                  mt: 2,
-                  bgcolor: "rgba(255,255,255,0.15)",
-                  color: "#EAEAEA",
-                  "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
-                }}
+                sx={{ mt: 2 }}
                 onClick={async () => {
                   setErr(null);
                   setBusy(true);
                   try {
-                    if (!props.onRegister) throw new Error("Register handler missing");
                     if (!email.trim()) throw new Error("Missing email");
                     if (password.length < 4) throw new Error("Password too short");
-                    await props.onRegister(email.trim(), password);
+                    const handler =
+                      props.mode === "login" ? props.onLogin : props.onRegister;
+                    if (!handler) {
+                      throw new Error(
+                        props.mode === "login"
+                          ? "Login handler missing"
+                          : "Register handler missing",
+                      );
+                    }
+                    await handler(email.trim(), password);
                     props.onClose();
                   } catch (e: any) {
                     setErr(e?.message ?? "Failed");
@@ -145,7 +142,7 @@ export function GenericModal(props: {
                   }
                 }}
               >
-                Register
+                {props.mode === "login" ? "Login" : "Register"}
               </Button>
             </>
           ) : (
@@ -158,24 +155,12 @@ export function GenericModal(props: {
                 onChange={(e) => setLabel(e.target.value)}
                 placeholder='e.g. "Visa **** 4242"'
                 margin="normal"
-                sx={{
-                  "& .MuiInputBase-input": { color: "#EAEAEA" },
-                  "& .MuiInputLabel-root": { color: "rgba(234,234,234,0.7)" },
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "rgba(234,234,234,0.5)",
-                  },
-                }}
               />
               <Button
                 fullWidth
                 variant="contained"
                 disabled={busy}
-                sx={{
-                  mt: 2,
-                  bgcolor: "rgba(255,255,255,0.15)",
-                  color: "#EAEAEA",
-                  "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
-                }}
+                sx={{ mt: 2 }}
                 onClick={async () => {
                   setErr(null);
                   setBusy(true);

@@ -1,30 +1,174 @@
+:root {
+  --gunmetal: #1a1d1a;
+  --panel: #242824;
+  --olive: #6b7c3a;
+  --alert-red: #c44b3c;
+  --amber: #c9a227;
+  --phosphor: #c5d0b8;
+  --phosphor-muted: rgba(197, 208, 184, 0.65);
+  --hairline: rgba(197, 208, 184, 0.18);
+  --hairline-strong: rgba(197, 208, 184, 0.32);
+  --status-strip-h: 40px;
+  --alert-feed-w: 260px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--gunmetal);
+  color: var(--phosphor);
+}
+
 .cesium-infoBox {
-    transform: translate(-73vw, 0);
+  transform: translate(-73vw, 0);
 }
 
-/* Hide Cesium Ion / attribution watermark */
 .cesium-widget-credits {
-    display: none !important;
+  display: block;
+  font-size: 10px;
 }
 
-/* AlertTester card blink + shake */
+.cesium-widget-credits,
+.leaflet-control-attribution {
+  background: rgba(26, 29, 26, 0.78) !important;
+  color: var(--phosphor-muted) !important;
+}
+
+.cesium-widget-credits a,
+.leaflet-control-attribution a {
+  color: var(--phosphor) !important;
+}
+
+/* High-signal alert flash (ops feed / tester) */
+@keyframes alertPulse {
+  0%,
+  100% {
+    background-color: rgba(196, 75, 60, 0.22);
+    border-color: rgba(196, 75, 60, 0.55);
+  }
+  50% {
+    background-color: rgba(196, 75, 60, 0.08);
+    border-color: rgba(196, 75, 60, 0.28);
+  }
+}
+
 @keyframes alertBlink {
-  0%   { background-color: rgba(255, 59, 59, 0.25); }
-  50%  { background-color: rgba(255, 255, 255, 0.15); }
-  100% { background-color: rgba(255, 59, 59, 0.25); }
+  0% {
+    background-color: rgba(196, 75, 60, 0.25);
+  }
+  50% {
+    background-color: rgba(197, 208, 184, 0.08);
+  }
+  100% {
+    background-color: rgba(196, 75, 60, 0.25);
+  }
 }
+
 @keyframes alertShake {
-  0%,100% { transform: translateX(0); }
-  10%     { transform: translateX(-2px); }
-  20%     { transform: translateX(3px); }
-  30%     { transform: translateX(-4px); }
-  40%     { transform: translateX(4px); }
-  50%     { transform: translateX(-3px); }
-  60%     { transform: translateX(2px); }
-  70%     { transform: translateX(-2px); }
-  80%     { transform: translateX(2px); }
-  90%     { transform: translateX(-1px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10% {
+    transform: translateX(-2px);
+  }
+  20% {
+    transform: translateX(3px);
+  }
+  30% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  50% {
+    transform: translateX(-3px);
+  }
+  60% {
+    transform: translateX(2px);
+  }
+  70% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+  90% {
+    transform: translateX(-1px);
+  }
 }
+
 .alert-card-new {
   animation: alertBlink 0.7s linear infinite, alertShake 0.7s ease-in-out infinite;
+}
+
+.alert-feed-item--pulse {
+  animation: alertPulse 1.2s ease-in-out 3;
+}
+
+/* Connection indicator pulse when reconnecting */
+@keyframes connPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.conn-dot--reconnecting {
+  animation: connPulse 1s ease-in-out infinite;
+}
+
+/* Left feed slide-in */
+@keyframes panelSlideIn {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.ops-alert-feed {
+  animation: panelSlideIn 0.28s ease-out;
+  transition:
+    height 180ms ease-out,
+    transform 180ms ease-out;
+}
+
+@media (max-width: 599.95px) {
+  :root {
+    --status-strip-h: 52px;
+  }
+
+  .cesium-infoBox {
+    max-width: calc(100vw - 16px);
+    transform: none;
+  }
+
+  .cesium-widget-credits,
+  .leaflet-control-attribution {
+    max-width: calc(100vw - 16px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alert-card-new,
+  .alert-feed-item--pulse,
+  .conn-dot--reconnecting,
+  .ops-alert-feed {
+    animation: none;
+    transition: none;
+  }
 }

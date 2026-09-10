@@ -1,0 +1,54 @@
+{
+  "title": "Liquid Glass rendition",
+  "question": "PRODUCT.md already pins Apple-like Liquid Glass in dark mode. The live UI is still muddy frosted olive panels. Which rendition should replace it?",
+  "options": [
+    {
+      "id": "ios-system-glass",
+      "label": "iOS System Glass",
+      "kicker": "PINNED BRIEF",
+      "lineage": "iOS 26 / WWDC Liquid Glass system chrome",
+      "thesis": "Refractive layered system glass: clear lenses, specular rims, soft depth — gym chrome that feels like Apple’s own dark UI.",
+      "palette": ["#0a0a0c", "#1c1c1e", "#f5f5f7", "#c6f25a"],
+      "materials": [
+        "layered refraction",
+        "specular rim light",
+        "adaptive blur"
+      ],
+      "viewport": "Mobile workout shell: translucent nav + cards over a deep near-black field; lime only on primary actions; GIFs read through clear glass edges.",
+      "risk": "Too close to stock Apple if accent and Hebrew rhythm disappear."
+    },
+    {
+      "id": "olive-glass-depth",
+      "label": "Olive Brand Glass",
+      "kicker": "BRAND-TINTED",
+      "lineage": "Liquid Glass grammar with olive/lime brand DNA",
+      "thesis": "Same refractive system glass, but fills and washes stay warm olive so the gym brand still owns the room.",
+      "palette": ["#0e130c", "#1a2214", "#e8ecdc", "#c6f25a"],
+      "materials": [
+        "olive-tinted glass",
+        "lime specular",
+        "layered blur"
+      ],
+      "viewport": "Same structure as system glass, but atmosphere and panel fills stay olive-green; not muddy frosted slabs.",
+      "risk": "Easy to slide back into today’s muddy frosted panels if tint is too heavy."
+    },
+    {
+      "id": "clear-lens-minimal",
+      "label": "Clear Lens Minimal",
+      "kicker": "LIGHTEST GLASS",
+      "lineage": "Near-clear glass with almost no fill tint",
+      "thesis": "Maximum clarity: nearly colorless glass so catalog GIFs and copy lead; chrome is a thin refractive shell.",
+      "palette": ["#09090b", "#18181b", "#fafafa", "#c6f25a"],
+      "materials": [
+        "near-clear fill",
+        "hairline specular",
+        "strong backdrop blur"
+      ],
+      "viewport": "Dark void + sharp content; nav and cards barely tinted so media and Hebrew type do the talking.",
+      "risk": "Can feel sparse or hard to scan if hierarchy relies only on blur."
+    }
+  ],
+  "reroll": false,
+  "canon": false,
+  "steer": true
+}

@@ -1,8 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using System.Threading.RateLimiting;
 using Server.Hubs;
 using Server.Realtime;
 using Server.Services;
+using Server.Services.News;
 using Server.Services.Telegram;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,6 +50,20 @@ builder.Services.Configure<TelegramOptions>(options =>
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("news", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 builder.Services.AddSignalR(options =>
 {
     // Keepalive: server pings client every 5s so the connection never goes idle.
@@ -81,6 +97,12 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddSingleton<IAlertsNotifier, AlertsNotifier>();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient(nameof(GdeltNewsService), client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("geo-alerts-news/1.0");
+});
+builder.Services.AddSingleton<IGdeltNewsService, GdeltNewsService>();
 builder.Services.AddSingleton<ITelegramService, TelegramService>();
 builder.Services.AddHostedService<OrefPollingService>();
 
@@ -139,6 +161,7 @@ if (app.Environment.IsDevelopment())
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseRateLimiter();
 
 // Map API controllers under /api/*.
 app.MapControllers();

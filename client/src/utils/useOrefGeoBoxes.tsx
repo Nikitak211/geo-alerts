@@ -547,37 +547,38 @@ out geom;`;
 const placeGeoCache = new Map<string, GeoBox>();
 const API_CONCURRENCY = 4;
 let apiInFlight = 0;
-const apiQueue: Array<{
+type ApiQueueJob = {
   place: string;
   resolve: (g: GeoBox | null) => void;
   reject: (e: any) => void;
   signal?: AbortSignal;
   fallbackToWebApi: boolean;
-}> = [];
+};
+
+const apiQueue: ApiQueueJob[] = [];
+
+async function runApiJob(job: ApiQueueJob): Promise<void> {
+  try {
+    let geo: GeoBox | null = await geocodeFallbackIL(job.place, job.signal);
+    if (!geo) {
+      geo = await geocodeOverpassIL(job.place, job.signal);
+    }
+    if (geo) placeGeoCache.set(job.place, geo);
+    job.resolve(geo);
+  } catch (e: any) {
+    if (e?.name === "AbortError") job.reject(e);
+    else job.resolve(null);
+  } finally {
+    apiInFlight--;
+    drainApiQueue();
+  }
+}
 
 function drainApiQueue() {
   while (apiInFlight < API_CONCURRENCY && apiQueue.length > 0) {
     const job = apiQueue.shift()!;
     apiInFlight++;
-    (async () => {
-      try {
-        let geo: GeoBox | null = await geocodeFallbackIL(
-          job.place,
-          job.signal,
-        );
-        if (!geo) {
-          geo = await geocodeOverpassIL(job.place, job.signal);
-        }
-        if (geo) placeGeoCache.set(job.place, geo);
-        job.resolve(geo);
-      } catch (e: any) {
-        if (e?.name === "AbortError") job.reject(e);
-        else job.resolve(null);
-      } finally {
-        apiInFlight--;
-        drainApiQueue();
-      }
-    })();
+    void runApiJob(job);
   }
 }
 

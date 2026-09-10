@@ -1,0 +1,39 @@
+{
+  "title": "Approve composition",
+  "question": "iOS System Glass is locked. Which composition should drive the rebuild? (Structure only — material language stays Liquid Glass.)",
+  "options": [
+    {
+      "id": "lens-stack",
+      "label": "Lens Stack",
+      "kicker": "WORKOUT LIST",
+      "thesis": "Stacked clear glass workout cards under a sticky header; closest to today’s task flow.",
+      "viewport": "Header → progress capsule → stacked exercise lenses → floating pill tabs.",
+      "risk": "Can feel familiar if glass depth is underplayed.",
+      "hero": ".impeccable/mocks/comp-a-lens-stack.webp",
+      "sketch": ".impeccable/mocks/comp-a-lens-stack.webp"
+    },
+    {
+      "id": "dock-stage",
+      "label": "Dock & Stage",
+      "kicker": "FOCUS MODE",
+      "thesis": "One dominant active exercise on a glass stage; next moves live in a tray.",
+      "viewport": "Large media stage → title/prescription → lime Done → thumbnail tray → thick dock.",
+      "risk": "Changes workout browsing density; needs care with multi-exercise plans.",
+      "hero": ".impeccable/mocks/comp-b-dock-stage.webp",
+      "sketch": ".impeccable/mocks/comp-b-dock-stage.webp"
+    },
+    {
+      "id": "index-glass",
+      "label": "Index Glass",
+      "kicker": "SCAN DENSITY",
+      "thesis": "Continuous glass index strips — library-first scanability as the system grammar.",
+      "viewport": "Filter bar → dense glass rows → floating nav.",
+      "risk": "Workout cards may feel too compressed if applied wholesale.",
+      "hero": ".impeccable/mocks/comp-c-index-glass.webp",
+      "sketch": ".impeccable/mocks/comp-c-index-glass.webp"
+    }
+  ],
+  "reroll": false,
+  "canon": false,
+  "steer": true
+}

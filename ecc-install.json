@@ -1,0 +1,6 @@
+{
+  "$schema": "https://raw.githubusercontent.com/affaan-m/ECC/main/schemas/ecc-install-config.schema.json",
+  "version": 1,
+  "target": "cursor",
+  "include": ["lang:typescript", "framework:react", "lang:csharp"]
+}
