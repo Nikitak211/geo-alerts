@@ -16,6 +16,10 @@ public sealed class GdeltNewsService : IGdeltNewsService
 {
     private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan MinUpstreamInterval = TimeSpan.FromSeconds(5);
+    // After a failure, don't call GDELT again until the cooldown passes (doubles per failure, capped).
+    // Without this every /api/news request retried upstream, which keeps GDELT's 429 IP ban alive.
+    private static readonly TimeSpan FailureCooldownMin = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan FailureCooldownMax = TimeSpan.FromMinutes(15);
 
     // Broad English news last 24h — geocoded to world places from titles.
     private const string DocUrl =
@@ -31,6 +35,8 @@ public sealed class GdeltNewsService : IGdeltNewsService
     private IReadOnlyList<NewsItemDto>? _cache;
     private DateTimeOffset _cacheAt = DateTimeOffset.MinValue;
     private DateTimeOffset _lastUpstream = DateTimeOffset.MinValue;
+    private DateTimeOffset _cooldownUntil = DateTimeOffset.MinValue;
+    private int _consecutiveFailures;
 
     public GdeltNewsService(IHttpClientFactory httpClientFactory, ILogger<GdeltNewsService> logger)
     {
@@ -53,6 +59,14 @@ public sealed class GdeltNewsService : IGdeltNewsService
             {
                 if (_cache is not null && DateTimeOffset.UtcNow - _cacheAt < CacheTtl)
                     return _cache;
+            }
+
+            if (DateTimeOffset.UtcNow < _cooldownUntil)
+            {
+                var cached = SnapshotOrEmpty();
+                if (cached.Count > 0)
+                    return cached;
+                throw new HttpRequestException("GDELT upstream in cooldown after recent failures");
             }
 
             var wait = MinUpstreamInterval - (DateTimeOffset.UtcNow - _lastUpstream);
@@ -78,6 +92,8 @@ public sealed class GdeltNewsService : IGdeltNewsService
                     _cache = items;
                     _cacheAt = DateTimeOffset.UtcNow;
                 }
+                _consecutiveFailures = 0;
+                _cooldownUntil = DateTimeOffset.MinValue;
 
                 return items;
             }
@@ -87,7 +103,13 @@ public sealed class GdeltNewsService : IGdeltNewsService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "GDELT news fetch failed");
+                _lastUpstream = DateTimeOffset.UtcNow;
+                _consecutiveFailures++;
+                var cooldown = TimeSpan.FromTicks(Math.Min(
+                    FailureCooldownMax.Ticks,
+                    FailureCooldownMin.Ticks * (1L << Math.Min(_consecutiveFailures - 1, 4))));
+                _cooldownUntil = DateTimeOffset.UtcNow + cooldown;
+                _logger.LogWarning(ex, "GDELT news fetch failed; next upstream attempt in {Cooldown}", cooldown);
                 var snapshot = SnapshotOrEmpty();
                 if (snapshot.Count > 0)
                     return snapshot;
