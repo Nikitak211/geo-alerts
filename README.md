@@ -1,6 +1,6 @@
 # Geo Alerts – Fullstack Setup
 
-This project is a fullstack application for real-time geo alerts (e.g. OREF-style alerts), with a map-based React client, optional betting/settlement, Telegram notifications, and screenshot capture. The backend can run as **ASP.NET Core** (primary) or the legacy **Node.js** server during migration.
+This project is a fullstack application for real-time geo alerts (e.g. OREF-style alerts), with a map-based React client Telegram notifications, and screenshot capture. The backend can run as **ASP.NET Core** (primary) or the legacy **Node.js** server during migration.
 
 ---
 
@@ -24,7 +24,7 @@ The long-term goal is to serve both API and client from the .NET backend only.
 - **Real-time: SignalR (@microsoft/signalr)** – Alerts and live updates from the .NET backend; replaces the legacy Node WebSocket on port 5535.
 - **Backend: ASP.NET Core 9** – Primary API, static SPA hosting, SignalR hub at `/ws`; chosen for performance and single-deployment story.
 - **Legacy backend: Node.js (Express)** – Original API + WebSocket; still runnable for parity during migration.
-- **Database: PostgreSQL** – Stores alerts, inferences, wallets, bets; connection via `ConnectionStrings__DefaultDatabase` or `DATABASE_URL`.
+- **Database: PostgreSQL** – Stores alerts and inferences; connection via `ConnectionStrings__DefaultDatabase` or `DATABASE_URL`.
 - **Optional: Telegram** – Notifications (e.g. screenshot alerts) via Bot API; requires Bot Token and Channel ID.
 - **Optional: Geoapify** – Boundaries API for alert polygons (cities); used by the client for geometry.
 - **Optional: Cesium Ion** – Map imagery (e.g. Google roadmap asset); optional access token for higher quotas.
@@ -99,7 +99,7 @@ The Node server in `server/src/server.js` uses `server/.env` (loaded via `dotenv
 
 Docker uses the **root** `.env` file (copy from root `.env.example`). It builds the client and .NET server and runs a single container.
 
-1. Copy the root `.env.example` to `.env` in the repo root and set at least `DATABASE_URL`. Set other variables as needed (Telegram, OREF mock, betting, screenshot, etc.).
+1. Copy the root `.env.example` to `.env` in the repo root and set at least `DATABASE_URL`. Set other variables as needed (Telegram, OREF mock, screenshot, etc.).
 2. From the repo root:
    ```bash
    docker compose up --build
@@ -124,7 +124,7 @@ Do not commit real secrets; use `.env` only locally and provide secrets via envi
 
 | Scope | Purpose |
 |-------|--------|
-| Root `.env` | Docker: `DATABASE_URL`, Telegram, feature flags, betting, screenshot, geo. |
+| Root `.env` | Docker: `DATABASE_URL`, Telegram, feature flags, screenshot, geo. |
 | Client `client/.env` | API base, WebSocket URL, Geoapify key, optional Cesium Ion token, toolbar/debug flags. |
 | Server `server/.env` | Node: ports, CORS, `DATABASE_URL`, OREF mock, Telegram. .NET: overridden by env when running in Docker/shell. |
 

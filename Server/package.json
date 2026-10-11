@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node ./mock-oref-ws.js",
-    "test:unit": "npm run build && node --test dist/tests/settlements/settlementResolver.test.js dist/tests/clustering/clusterAlerts.test.js dist/tests/inference/buildReverseCorridor.test.js dist/tests/inference/rankCandidates.test.js dist/tests/inference/runInference.test.js dist/tests/geo/trajectoryAssumption.test.js dist/tests/bets/settlementMinute.test.js",
+    "test:unit": "npm run build && node --test dist/tests/settlements/settlementResolver.test.js dist/tests/clustering/clusterAlerts.test.js dist/tests/inference/buildReverseCorridor.test.js dist/tests/inference/rankCandidates.test.js dist/tests/inference/runInference.test.js dist/tests/geo/trajectoryAssumption.test.js dist/tests/time/israelTime.test.js",
     "build": "tsc",
     "prestart": "npm run build",
     "start": "node ./src/server.js",

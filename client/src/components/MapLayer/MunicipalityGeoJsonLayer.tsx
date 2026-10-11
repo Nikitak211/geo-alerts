@@ -1,7 +1,7 @@
 import { FC, memo, useEffect, useRef, useState } from "react";
 import { useCesium } from "resium";
 import * as Cesium from "cesium";
-import { isExcludedFromBetting } from "../../utils/regionAreas";
+import { isHiddenOnMap } from "../../utils/regionAreas";
 
 type MunicipalityGeoJsonLayerProps = {
   geojsonUrl: string;
@@ -40,7 +40,7 @@ export const MunicipalityGeoJsonLayer: FC<MunicipalityGeoJsonLayerProps> = memo(
               typeof munHeb?.getValue === "function"
                 ? munHeb.getValue(Cesium.JulianDate.now())
                 : munHeb;
-            if (typeof name === "string" && isExcludedFromBetting(name)) {
+            if (typeof name === "string" && isHiddenOnMap(name)) {
               entity.show = false;
             }
           }

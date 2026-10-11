@@ -36,20 +36,10 @@ services:
 
       # Feature flags
       Features__EnableTelegram: "${ENABLE_TELEGRAM}"
-      Features__EnableBets: "${ENABLE_BETS}"
       USE_OREF_MOCK: "${USE_OREF_MOCK}"
       OREF_URL: "${OREF_URL}"
       # Toolbar: server serves this at GET /api/config. Use "true" or leave unset (defaults to false).
       App__ActiveToolbar: "${ACTIVE_TOOLBAR:-false}"
-
-      # Betting
-      Betting__ExpiryGraceMs: "${BET_EXPIRY_GRACE_MS}"
-      Betting__ProximityExpiryGraceMs: "${BET_PROXIMITY_EXPIRY_GRACE_MS}"
-      Betting__ExpiryLoopIntervalMs: "${BET_EXPIRY_LOOP_INTERVAL_MS}"
-      Betting__RegionPayoutMultiplier: "${BET_REGION_PAYOUT_MULTIPLIER}"
-      Betting__PlatformFeeRatio: "${BET_PLATFORM_FEE_RATIO}"
-      Betting__ExactPoolShare: "${BET_EXACT_POOL_SHARE}"
-      Betting__NearWinnerMinutes: "${BET_NEAR_WINNER_MINUTES}"
 
       # Screenshot
       Screenshot__StoragePath: "${SCREENSHOT_STORAGE_PATH}"

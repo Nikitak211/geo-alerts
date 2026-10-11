@@ -1,5 +1,5 @@
 /**
- * Single shared SignalR connection so wallet/bets and OREF handlers both receive server messages.
+ * Single shared SignalR connection so all OREF/news handlers receive server messages.
  * Without this, Main and useOrefAlerts each created their own connection; only one may receive broadcasts.
  */
 

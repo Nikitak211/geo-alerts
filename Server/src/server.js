@@ -3,13 +3,6 @@ require("dotenv").config({ path: require("path").join(__dirname, "../.env") });
 const express = require("express");
 const { pool } = require("./db/pool");
 const { createWsServer } = require("./ws/ws.server");
-const { hashPassword, requireUser } = require("./auth/auth.service");
-const { normalizeEmail } = require("./utils/normalize");
-const {
-  getOrCreateUserWallet,
-  buildWalletResponseRow,
-} = require("./wallet/wallet.service");
-const { insertLedger } = require("./wallet/wallet.ledger");
 const { sleep } = require("./utils/time");
 const path = require("path");
 const ingest = require(path.join(__dirname, "../dist/ingest/oref"));
@@ -38,13 +31,7 @@ const alertRepository = require(
 const inferenceRepository = require(
   path.join(__dirname, "../dist/storage/repositories/inferenceRepository"),
 );
-const { createSettlementService } = require("./bets/settlement.service");
-const { createExpiryService } = require("./bets/expiry.service");
-const { createBetsService } = require("./bets/bets.service");
 const { createOrefPoller } = require("./oref/oref.poller");
-const { mountAuthRoutes } = require("./auth/auth.routes");
-const { mountWalletRoutes } = require("./wallet/wallet.routes");
-const { mountBetsRoutes } = require("./bets/bets.routes");
 
 const PORT = Number(process.env.PORT || 5535);
 const HTTP_PORT = Number(process.env.HTTP_PORT || 8090);
@@ -66,28 +53,6 @@ app.use((req, res, next) => {
 });
 
 const { wss, broadcast } = createWsServer(PORT);
-
-const settlementService = createSettlementService({
-  pool,
-  broadcast,
-  getOrCreateUserWallet,
-  insertLedger,
-});
-const { processAlertPayload } = settlementService;
-
-const expiryService = createExpiryService({
-  pool,
-  broadcast,
-  getOrCreateUserWallet,
-  insertLedger,
-});
-const { expireMissedBets } = expiryService;
-
-const betsService = createBetsService({
-  pool,
-  getOrCreateUserWallet,
-  insertLedger,
-});
 
 const GEOJSON_LOOKUP_PATH_FOR_INFERENCE = path.join(
   process.cwd(),
@@ -213,7 +178,6 @@ function mockFetchAlertsJson() {
 
 const orefPoller = createOrefPoller({
   broadcast,
-  processAlertPayload,
   sleep,
   ...(process.env.USE_OREF_MOCK === "true" && {
     fetchAlertsJson: mockFetchAlertsJson,
@@ -291,29 +255,6 @@ const orefPoller = createOrefPoller({
   },
 });
 const { loop: orefLoop } = orefPoller;
-
-mountAuthRoutes(app, {
-  pool,
-  hashPassword,
-  normalizeEmail,
-  getOrCreateUserWallet,
-  buildWalletResponseRow,
-});
-
-mountWalletRoutes(app, {
-  pool,
-  requireUser,
-  getOrCreateUserWallet,
-  buildWalletResponseRow,
-  insertLedger,
-  broadcast,
-});
-
-mountBetsRoutes(app, {
-  requireUser,
-  betsService,
-  broadcast,
-});
 
 inferenceApi.mountInferenceRoutes(app, inferenceService);
 
@@ -444,17 +385,4 @@ app.listen(HTTP_PORT, () => {
   }
 });
 
-async function expiryLoop() {
-  while (true) {
-    try {
-      await expireMissedBets();
-      await sleep(3000);
-    } catch (e) {
-      console.error("expiry loop error:", e?.message ?? e);
-      await sleep(3000);
-    }
-  }
-}
 
-orefLoop();
-expiryLoop();

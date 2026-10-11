@@ -1,6 +1,5 @@
 /**
  * Areas that are regions/districts (e.g. "גולן") rather than cities or settlements.
- * Bets on these have lower winning payout (see backend).
  */
 
 const normalize = (s: string) =>
@@ -75,13 +74,13 @@ export function isRegion(areaHeb: string): boolean {
   return false;
 }
 
-/** Areas that cannot be selected on the map or used for betting (e.g. "ללא שיפוט"). */
-const EXCLUDED_FROM_BETTING = new Set(["ללא שיפוט"].map(normalize));
+/** Areas that are hidden on the map (e.g. "ללא שיפוט"). */
+const HIDDEN_ON_MAP = new Set(["ללא שיפוט"].map(normalize));
 
 /**
- * Returns true if areaHeb is excluded from map selection and betting.
+ * Returns true if areaHeb is hidden on the map.
  */
-export function isExcludedFromBetting(areaHeb: string): boolean {
+export function isHiddenOnMap(areaHeb: string): boolean {
   if (!areaHeb || typeof areaHeb !== "string") return false;
-  return EXCLUDED_FROM_BETTING.has(normalize(areaHeb));
+  return HIDDEN_ON_MAP.has(normalize(areaHeb));
 }
