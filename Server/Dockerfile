@@ -1,25 +1,12 @@
-FROM node:20-alpine
-
+﻿FROM node:20-alpine
 WORKDIR /app
-
-# Install dependencies
 COPY package.json package-lock.json ./
-# Install all deps for build (TypeScript is devDependency)
-RUN npm ci
-
-# Build TypeScript (produces dist/)
+RUN npm ci --no-audit --no-fund
 COPY tsconfig.json ./
 COPY src ./src
-RUN npm run build
-
-# Prune dev deps for smaller image
-RUN npm prune --omit=dev
-
-# Server entry is src/server.js (requires dist/ and src/)
+RUN npm run build && npm prune --omit=dev && npm cache clean --force
+ENV NODE_ENV=production PORT=5535 HTTP_PORT=8090
 EXPOSE 5535 8090
-
-ENV NODE_ENV=production
-ENV PORT=5535
-ENV HTTP_PORT=8090
-
+# Run as the unprivileged "node" user that ships with the image
+USER node
 CMD ["node", "./src/server.js"]

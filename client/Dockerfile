@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy package files and scripts so postinstall (copy-cesium) can run
 COPY package.json package-lock.json ./
 COPY scripts ./scripts
-RUN npm ci
+RUN npm ci --no-audit --no-fund
 
 COPY . .
 
@@ -22,11 +22,13 @@ RUN npm run build
 RUN sed -i 's/<script /<script type="module" /g' build/index.html
 
 # Production stage: serve static files with nginx
-FROM nginx:alpine
+# Unprivileged nginx (runs as UID 101, listens on 8080)
+FROM nginxinc/nginx-unprivileged:alpine
 
 COPY --from=build /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+EXPOSE 8080
+USER 101
 
 CMD ["nginx", "-g", "daemon off;"]
