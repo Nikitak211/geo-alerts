@@ -7,6 +7,7 @@ namespace Server.Controllers;
 
 [ApiController]
 [Route("api/debug/realtime")]
+[DevelopmentOnly]
 public sealed class DebugRealtimeController : ControllerBase
 {
     private readonly IAlertsNotifier _notifier;

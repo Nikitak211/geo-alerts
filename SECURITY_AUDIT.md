@@ -34,7 +34,7 @@ False positives: `X-API-Key` examples in `.cursor/**/SKILL.md`; Cesium's built-i
 - `.github/skills/**`, `.cursor/**`: vendored agent tooling, out of scope.
 
 ## OWASP Top 10 review
-- A01 Broken Access Control: **FIXED** `POST /api/debug/realtime/test-wallet` was reachable anonymously in production and broadcast a fake `wallet_updated` event to all connected clients; now returns 404 outside Development. `/api/register` and `/api/login` are placeholders that store nothing (no real accounts).
+- A01 Broken Access Control: **FIXED** `POST /api/debug/realtime/test-wallet` was reachable anonymously in production and broadcast a fake `wallet_updated` event to all connected clients; now returns 404 outside Development. **FIXED (critical)** `POST /api/debug/telegram/send-photo` let anyone make the server read an arbitrary file path from disk and post it to the public Telegram channel (arbitrary file read + exfiltration). All `/api/debug/*` controllers are now `[DevelopmentOnly]` (404 in production). `/api/register` and `/api/login` are placeholders that store nothing (no real accounts).
 - A02 Crypto failures: TLS terminated by Cloudflare; HSTS missing -> security headers PR.
 - A03 Injection: EF/parameterized data access; no raw SQL string building found by Semgrep.
 - A04 Insecure design: betting/wallet feature has no payment integration in the server code; scope to be confirmed and documented in the Terms PR.
