@@ -1,18 +1,24 @@
-version: "3.9"
-
 services:
   geo-alerts:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        # Client build (optional; toolbar can also be set at runtime via ACTIVE_TOOLBAR + GET /api/config).
-        REACT_APP_ACTIVE_TOOLBAR: ${ACTIVE_TOOLBAR:-}
-        REACT_APP_GEOAPIFY_API_KEY: ${REACT_APP_GEOAPIFY_API_KEY:-}
-        REACT_APP_OREF_TRAJECTORY_DEBUG: ${REACT_APP_OREF_TRAJECTORY_DEBUG:-}
-        REACT_APP_CESIUM_ION_ACCESS_TOKEN: ${REACT_APP_CESIUM_ION_ACCESS_TOKEN:-}
-        REACT_APP_STADIA_MAPS_API_KEY: ${REACT_APP_STADIA_MAPS_API_KEY:-}
+      # Client REACT_APP_* values come from a BuildKit secret, not build args (keeps them out of image history).
+      secrets:
+        - client_env
     image: geo-alerts-server
+    user: "1654:1654"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: "1.5"
+    pids_limit: 256
+    restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
@@ -69,3 +75,7 @@ services:
       - ./public/data:/app/client-data:ro
       # Optional: screenshots directory
       - ./screenshots:/app/screenshots
+secrets:
+  client_env:
+    # Optional file with REACT_APP_* lines (gitignored). Create empty if unused.
+    file: ./client/.env.production

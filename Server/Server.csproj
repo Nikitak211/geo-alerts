@@ -37,14 +37,14 @@
   </ItemGroup>
 
   <!-- Build the React client for Release builds (Build/Publish) -->
-  <Target Name="BuildClient" BeforeTargets="Build;Publish" Condition="'$(Configuration)' == 'Release'">
+  <Target Name="BuildClient" BeforeTargets="Build;Publish" Condition="'$(Configuration)' == 'Release' And '$(SkipClientBuild)' != 'true'">
     <Message Text="Building client app in $(SpaRoot)" Importance="high" />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
   </Target>
 
   <!-- Copy the built client into wwwroot so it is served by ASP.NET Core -->
-  <Target Name="CopyClientBuild" AfterTargets="BuildClient" Condition="'$(Configuration)' == 'Release'">
+  <Target Name="CopyClientBuild" AfterTargets="BuildClient" Condition="'$(Configuration)' == 'Release' And '$(SkipClientBuild)' != 'true'">
     <ItemGroup>
       <ClientFiles Include="$(ClientBuildDir)**\*" />
     </ItemGroup>

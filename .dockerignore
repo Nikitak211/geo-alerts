@@ -2,7 +2,7 @@
 # Normal builds use context ./client or ./server so their own .dockerignore apply.
 .git
 .gitignore
-# Exclude root and server .env (secrets). Keep client/.env so CRA can use REACT_APP_* at build time.
+# Exclude ALL .env files. Client REACT_APP_* values come in via BuildKit secret (client_env).
 /.env
 /.env.*
 server/.env
@@ -16,3 +16,12 @@ node_modules
 **/coverage
 *.md
 docs
+client/.env
+client/.env.*
+!client/.env.example
+Server/.env
+Server/.env.*
+**/bin
+**/obj
+Server/wwwroot
+screenshots
