@@ -50,3 +50,77 @@ jobs:
 
       - name: Test legacy TypeScript server
         run: npm run test:unit --prefix Server
+
+  security:
+    name: security scans
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks (full history)
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.21.2 \
+            git /repo --no-banner --redact --gitleaks-ignore-path /repo/.gitleaksignore
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: npm audit (client, fail on critical)
+        run: npm audit --prefix client --audit-level=critical
+
+      - name: npm audit (Server, fail on high)
+        run: npm audit --prefix Server --audit-level=high
+
+      - name: Trivy filesystem scan (vulns + secrets, fail on CRITICAL)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          skip-dirs: client/public/cesium,.cursor,.github/skills
+
+      - name: Trivy config scan (Dockerfiles/compose, report only)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+
+      - name: Hadolint (root Dockerfile)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: error
+
+      - name: Hadolint (Server/Dockerfile)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Server/Dockerfile
+          failure-threshold: error
+
+      - name: Semgrep (OWASP Top 10 + default, fail on ERROR)
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep semgrep scan \
+            --config p/default --config p/owasp-top-ten \
+            --exclude client/public/cesium --exclude .cursor --exclude .github/skills \
+            --exclude 'Server/mock-oref-ws.js' --exclude 'Server/scripts' \
+            --severity ERROR --error --metrics off
+
+      - name: .NET vulnerable packages
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - run: |
+          dotnet restore Server/Server.csproj
+          dotnet list Server/Server.csproj package --vulnerable --include-transitive | tee vuln.txt
+          ! grep -E "Critical|High" vuln.txt

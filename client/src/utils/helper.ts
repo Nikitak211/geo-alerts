@@ -51,6 +51,7 @@ export function getSignalRHubUrl(): string {
       if (typeof window !== "undefined") return `${window.location.origin}/ws`;
       return `http://localhost:${DEFAULT_OREF_HUB_PORT}/ws`;
     }
+    // nosemgrep: javascript.lang.security.detect-insecure-websocket.detect-insecure-websocket -- converts a configured ws:// URL to http:// for SignalR; production is same-origin https/wss.
     if (s.startsWith("ws://")) return "http" + s.slice(2);
     if (s.startsWith("wss://")) return "https" + s.slice(3);
     return s;

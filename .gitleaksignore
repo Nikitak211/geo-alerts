@@ -1,0 +1,10 @@
+# Known historical findings (see SECURITY_AUDIT.md). The real ones were rotated/must be rotated; history not rewritten.
+5b57d6da8a937901f74517d371c7c5e74d4c9d9a:.cursor/.agents/skills/api-design/SKILL.md:generic-api-key:305
+5b57d6da8a937901f74517d371c7c5e74d4c9d9a:.cursor/skills/api-design/SKILL.md:generic-api-key:307
+44c4d2932bb503be5a9feb7791c1259cb5f0a586:server/.env:generic-api-key:3
+44c4d2932bb503be5a9feb7791c1259cb5f0a586:server/.env:telegram-bot-api-token:1
+44c4d2932bb503be5a9feb7791c1259cb5f0a586:save.txt:generic-api-key:4
+007822f0674ed67cd4cdd721cc46ce582ca3d189:client/src/index.tsx:jwt:10
+007822f0674ed67cd4cdd721cc46ce582ca3d189:client/public/cesium/index.js:jwt:5993
+007822f0674ed67cd4cdd721cc46ce582ca3d189:client/public/cesium/index.cjs:jwt:5993
+007822f0674ed67cd4cdd721cc46ce582ca3d189:client/public/cesium/Cesium.js:jwt:5993
