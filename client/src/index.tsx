@@ -10,6 +10,7 @@ import { MapRenderPage } from "./render";
 import { appTheme } from "./theme";
 import { SignalRConnectionProvider } from "./contexts/SignalRConnectionContext";
 import "./index.css";
+import { CookieNotice } from "./components/legal/CookieNotice";
 
 const _cesiumIonToken = process.env.REACT_APP_CESIUM_ION_ACCESS_TOKEN;
 if (_cesiumIonToken) {
@@ -36,6 +37,7 @@ root.render(
       {isRenderPage ? <MapRenderPage /> : (
         <SignalRConnectionProvider>
           <Main />
+          <CookieNotice />
         </SignalRConnectionProvider>
       )}
     </ThemeProvider>
