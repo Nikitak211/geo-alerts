@@ -78,7 +78,7 @@ jobs:
         run: npm audit --prefix Server --audit-level=high
 
       - name: Trivy filesystem scan (vulns + secrets, fail on CRITICAL)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -89,7 +89,7 @@ jobs:
           skip-dirs: client/public/cesium,.cursor,.github/skills
 
       - name: Trivy config scan (Dockerfiles/compose, report only)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: config
           scan-ref: .
@@ -97,13 +97,13 @@ jobs:
           exit-code: '0'
 
       - name: Hadolint (root Dockerfile)
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: Dockerfile
           failure-threshold: error
 
       - name: Hadolint (Server/Dockerfile)
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: Server/Dockerfile
           failure-threshold: error
