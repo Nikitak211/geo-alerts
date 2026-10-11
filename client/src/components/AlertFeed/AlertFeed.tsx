@@ -247,8 +247,8 @@ export const AlertFeed: FC = () => {
                       px: 0.5,
                       py: 0.15,
                       borderRadius: "2px",
-                      bgcolor: isNew ? tactical.alertRed : tactical.gunmetal,
-                      color: isNew ? tactical.gunmetal : tactical.phosphor,
+                      bgcolor: isNew ? "#9e3426" : tactical.gunmetal,
+                      color: isNew ? "#ffffff" : tactical.phosphor,
                     }}
                   >
                     {isNew ? "NEW" : "ALERT"}

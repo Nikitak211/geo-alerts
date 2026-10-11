@@ -6,6 +6,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import { Main } from "./Main";
+import { AccessibilityStatement } from "./pages/AccessibilityStatement";
 import { MapRenderPage } from "./render";
 import { appTheme } from "./theme";
 import { SignalRConnectionProvider } from "./contexts/SignalRConnectionContext";
@@ -29,11 +30,14 @@ const isRenderPage =
   (window.location.pathname.toLowerCase() === "/render" ||
     /^\/render\/alert\/[^/]+/.test(window.location.pathname));
 
+const isAccessibilityPage =
+  typeof window !== "undefined" && /^\/accessibility\/?$/i.test(window.location.pathname);
+
 root.render(
   <React.StrictMode>
     <ThemeProvider theme={appTheme}>
       <CssBaseline />
-      {isRenderPage ? <MapRenderPage /> : (
+      {isRenderPage ? <MapRenderPage /> : isAccessibilityPage ? <AccessibilityStatement /> : (
         <SignalRConnectionProvider>
           <Main />
         </SignalRConnectionProvider>
