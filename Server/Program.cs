@@ -189,7 +189,7 @@ app.UseRateLimiter();
 // Map API controllers under /api/*.
 app.MapControllers();
 
-// Realtime hub for alerts, wallet events, and other websocket-style messages.
+// Realtime hub for alerts, news and other websocket-style messages.
 app.MapHub<AlertsHub>("/ws");
 
 // Fallback to index.html for client-side routing (SPA).

@@ -7,7 +7,6 @@ const ingest = require(path.join(__dirname, "../../dist/ingest/oref"));
 function createOrefPoller(deps) {
   const {
     broadcast,
-    processAlertPayload,
     sleep,
     resolvePlacesAndBroadcast,
     onAlertReady,
@@ -42,13 +41,6 @@ function createOrefPoller(deps) {
           placeNames.length > 0
         ) {
           await resolvePlacesAndBroadcast(placeNames);
-        }
-      },
-      async onPersist(_normalized, rawPayload) {
-        const settlementResults = await processAlertPayload(rawPayload);
-        console.log("[oref] settlementResults length:", settlementResults.length);
-        if (settlementResults.length) {
-          console.log("settlementResults:", settlementResults);
         }
       },
     });

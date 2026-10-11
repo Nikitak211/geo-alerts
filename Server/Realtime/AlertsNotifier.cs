@@ -21,18 +21,6 @@ public sealed class AlertsNotifier : IAlertsNotifier
         return _hubContext.Clients.All.SendAsync("message", message);
     }
 
-    public Task WalletUpdatedAsync(object payload)
-    {
-        var envelope = new
-        {
-            type = "wallet_updated",
-            payload
-        };
-
-        _logger.LogInformation("Broadcasting wallet_updated event");
-        return _hubContext.Clients.All.SendAsync("message", envelope);
-    }
-
     public Task InferenceResultAsync(object payload)
     {
         var envelope = new
