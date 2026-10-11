@@ -59,6 +59,7 @@ public sealed class AlertsController : ControllerBase
 
     /// <summary>POST /api/alerts/{id}/screenshot — client uploads screenshot image + metadata; server forwards to Telegram.</summary>
     [HttpPost("{id}/screenshot")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("uploads")]
     [RequestSizeLimit(10 * 1024 * 1024)] // 10 MB
     [RequestFormLimits(MultipartBodyLengthLimit = 10 * 1024 * 1024)]
     public async Task<IActionResult> SubmitScreenshot(
