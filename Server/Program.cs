@@ -8,6 +8,7 @@ using Server.Services.News;
 using Server.Services.Telegram;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
 
 // Bind strongly-typed configuration for application-level settings.
 builder.Services.Configure<AppOptions>(builder.Configuration.GetSection("App"));
@@ -156,6 +157,8 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
     app.UseCors("DevCorsPolicy");
 }
+
+app.UseMiddleware<Server.Middleware.SecurityHeadersMiddleware>();
 
 // Serve static files from wwwroot (for the built React client in production).
 app.UseStaticFiles();
