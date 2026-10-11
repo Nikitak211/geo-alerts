@@ -8,6 +8,7 @@ using Server.Services.News;
 using Server.Services.Telegram;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
 
 // Bind strongly-typed configuration for application-level settings.
 builder.Services.Configure<AppOptions>(builder.Configuration.GetSection("App"));
@@ -52,17 +53,37 @@ builder.Services.Configure<TelegramOptions>(options =>
 builder.Services.AddControllers();
 builder.Services.AddRateLimiter(options =>
 {
+    static FixedWindowRateLimiterOptions Window(int permits) => new()
+    {
+        PermitLimit = permits,
+        Window = TimeSpan.FromMinutes(1),
+        QueueLimit = 0,
+        AutoReplenishment = true
+    };
+
+    // Global limiter for every endpoint (API, SignalR negotiate, SPA fallback). Static files are
+    // served before routing and are not counted. Keyed by the real client IP (CF-Connecting-IP via tunnel).
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            Server.Middleware.ClientIpResolver.Resolve(context), _ => Window(300)));
+
     options.AddPolicy("news", context =>
         RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            factory: _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 60,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0,
-                AutoReplenishment = true
-            }));
+            partitionKey: Server.Middleware.ClientIpResolver.Resolve(context),
+            factory: _ => Window(60)));
+
+    // Expensive writes (screenshot upload forwarded to Telegram).
+    options.AddPolicy("uploads", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: Server.Middleware.ClientIpResolver.Resolve(context),
+            factory: _ => Window(5)));
+
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = (ctx, _) =>
+    {
+        ctx.HttpContext.Response.Headers.RetryAfter = "60";
+        return ValueTask.CompletedTask;
+    };
 });
 builder.Services.AddSignalR(options =>
 {
@@ -156,6 +177,8 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
     app.UseCors("DevCorsPolicy");
 }
+
+app.UseMiddleware<Server.Middleware.SecurityHeadersMiddleware>();
 
 // Serve static files from wwwroot (for the built React client in production).
 app.UseStaticFiles();

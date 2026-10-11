@@ -10,6 +10,7 @@ namespace Server.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/debug/telegram")]
+[DevelopmentOnly]
 public sealed class DebugTelegramController : ControllerBase
 {
     private readonly ITelegramService _telegram;

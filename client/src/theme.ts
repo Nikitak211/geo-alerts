@@ -9,7 +9,7 @@ export const tactical = {
   alertRed: "#c44b3c",
   amber: "#c9a227",
   phosphor: "#c5d0b8",
-  phosphorMuted: "rgba(197, 208, 184, 0.65)",
+  phosphorMuted: "rgba(197, 208, 184, 0.82)",
   hairline: "rgba(197, 208, 184, 0.18)",
   hairlineStrong: "rgba(197, 208, 184, 0.32)",
 } as const;
