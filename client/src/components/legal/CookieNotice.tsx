@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 
 const STORAGE_KEY = "geoAlerts.storageNoticeAck.v1";
