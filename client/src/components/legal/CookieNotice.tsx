@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Link, Typography } from "@mui/material";
 
 const STORAGE_KEY = "geoAlerts.storageNoticeAck.v1";
 
@@ -49,12 +49,18 @@ export function CookieNotice(): React.ReactElement | null {
     >
       <Typography variant="body2" sx={{ mb: 1.5, lineHeight: 1.5 }}>
         Geo Alerts does not use analytics, advertising or tracking cookies. We only store a few
-        technical settings on your device (for example map preferences) so the app works.{" "}
+        technical settings on your device (for example map preferences) so the app works. See our{" "}
+        <Link href="/privacy" underline="always" sx={{ color: "#e6ecdf" }}>privacy policy</Link>.{" "}
         <span lang="he" dir="rtl" style={{ display: "block", marginTop: 6 }}>
           האתר אינו משתמש בעוגיות למעקב, ניתוח או פרסום. נשמרות במכשיר רק הגדרות טכניות הנדרשות לפעולת האתר.
         </span>
       </Typography>
-      <Button variant="contained" size="small" onClick={dismiss} autoFocus={false}>
+      <Button
+        variant="contained"
+        size="small"
+        onClick={dismiss}
+        sx={{ bgcolor: "#e6ecdf", color: "#1a1d1a", "&:hover": { bgcolor: "#ffffff" } }}
+      >
         OK, got it
       </Button>
     </Box>

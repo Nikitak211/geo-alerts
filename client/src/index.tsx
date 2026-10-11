@@ -7,6 +7,8 @@ import CssBaseline from "@mui/material/CssBaseline";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import { Main } from "./Main";
 import { AccessibilityStatement } from "./pages/AccessibilityStatement";
+import { PrivacyPolicy } from "./pages/PrivacyPolicy";
+import { TermsOfUse } from "./pages/TermsOfUse";
 import { MapRenderPage } from "./render";
 import { appTheme } from "./theme";
 import { SignalRConnectionProvider } from "./contexts/SignalRConnectionContext";
@@ -31,6 +33,10 @@ const isRenderPage =
   (window.location.pathname.toLowerCase() === "/render" ||
     /^\/render\/alert\/[^/]+/.test(window.location.pathname));
 
+const legalPath =
+  typeof window !== "undefined" ? window.location.pathname.toLowerCase().replace(/\/+$/, "") : "";
+const isPrivacyPage = legalPath === "/privacy";
+const isTermsPage = legalPath === "/terms";
 const isAccessibilityPage =
   typeof window !== "undefined" && /^\/accessibility\/?$/i.test(window.location.pathname);
 
@@ -38,7 +44,7 @@ root.render(
   <React.StrictMode>
     <ThemeProvider theme={appTheme}>
       <CssBaseline />
-      {isRenderPage ? <MapRenderPage /> : isAccessibilityPage ? <AccessibilityStatement /> : (
+      {isRenderPage ? <MapRenderPage /> : isAccessibilityPage ? <AccessibilityStatement /> : isPrivacyPage ? <PrivacyPolicy /> : isTermsPage ? <TermsOfUse /> : (
         <SignalRConnectionProvider>
           <Main />
           <CookieNotice />
