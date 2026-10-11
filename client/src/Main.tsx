@@ -408,13 +408,15 @@ export const Main: FC = () => {
 
         <Box role="region" aria-label="Alert map" sx={{ position: "relative", flex: 1, minWidth: 0, minHeight: 0 }}>
           <MainMap toolbarVisible={showToolbar} />
-          <Link
-            href="/accessibility"
-            underline="always"
-            sx={{ position: "absolute", left: 8, bottom: { xs: "calc(64px + env(safe-area-inset-bottom))", sm: 32 }, zIndex: 11, px: 1, py: 0.5, borderRadius: 1, bgcolor: "rgba(26,29,26,0.9)", color: "#e6ecdf", fontSize: 13 }}
+          <Box
+            component="nav"
+            aria-label="Site information"
+            sx={{ position: "absolute", left: 8, bottom: { xs: "calc(64px + env(safe-area-inset-bottom))", sm: 32 }, zIndex: 11, display: "flex", gap: 0.5, flexWrap: "wrap", "& a": { px: 1, py: 0.5, borderRadius: 1, bgcolor: "rgba(26,29,26,0.9)", color: "#e6ecdf", fontSize: 13 } }}
           >
-            <span lang="he">נגישות</span> · Accessibility
-          </Link>
+            <Link href="/accessibility" underline="always"><span lang="he">נגישות</span> · Accessibility</Link>
+            <Link href="/privacy" underline="always">Privacy</Link>
+            <Link href="/terms" underline="always">Terms</Link>
+          </Box>
 
           <GenericModal
             open={modalOpen}
