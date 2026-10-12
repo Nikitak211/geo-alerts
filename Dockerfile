@@ -31,6 +31,9 @@ COPY --from=build --chown=root:root /app/publish ./
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080 \
     DOTNET_EnableDiagnostics=0
 EXPOSE 8080
+# Writable dir for the persistent news cache (mount a volume here; owned by the app user
+# so a fresh named volume inherits the ownership).
+RUN mkdir -p /app/cache && chown $APP_UID:$APP_UID /app/cache
 # Built-in non-root user of the official .NET images (UID 1654)
 USER $APP_UID
 ENTRYPOINT ["dotnet", "Server.dll"]

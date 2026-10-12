@@ -6,6 +6,7 @@ namespace Server.Services.News;
 public interface IGdeltNewsService
 {
     Task<IReadOnlyList<NewsItemDto>> GetWorldNewsAsync(CancellationToken ct = default);
+    NewsStatusDto GetStatus();
 }
 
 /// <summary>
@@ -38,87 +39,179 @@ public sealed class GdeltNewsService : IGdeltNewsService
     private DateTimeOffset _cooldownUntil = DateTimeOffset.MinValue;
     private int _consecutiveFailures;
 
-    public GdeltNewsService(IHttpClientFactory httpClientFactory, ILogger<GdeltNewsService> logger)
+    public GdeltNewsService(
+        IHttpClientFactory httpClientFactory,
+        ILogger<GdeltNewsService> logger,
+        NewsCacheStore? cacheStore = null,
+        IRssNewsSource? rssFallback = null)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _cacheStore = cacheStore;
+        _rssFallback = rssFallback;
+    }
+
+    private static readonly TimeSpan RssMinInterval = TimeSpan.FromMinutes(2);
+    private readonly NewsCacheStore? _cacheStore;
+    private readonly IRssNewsSource? _rssFallback;
+    private bool _diskLoaded;
+    private string _cacheSource = "none";
+    private string? _lastError;
+    private DateTimeOffset _lastRssAttempt = DateTimeOffset.MinValue;
+
+    /// <summary>Clock, overridable in tests.</summary>
+    public Func<DateTimeOffset> Now { get; set; } = () => DateTimeOffset.UtcNow;
+
+    public NewsStatusDto GetStatus()
+    {
+        EnsureDiskCacheLoaded();
+        lock (_gate)
+        {
+            var count = _cache?.Count ?? 0;
+            return new NewsStatusDto
+            {
+                Available = count > 0,
+                Count = count,
+                Source = count > 0 ? _cacheSource : "none",
+                UpdatedAt = count > 0 ? _cacheAt.ToString("o", CultureInfo.InvariantCulture) : null,
+                Stale = count > 0 && Now() - _cacheAt >= CacheTtl,
+                LastError = _lastError,
+            };
+        }
+    }
+
+    private void EnsureDiskCacheLoaded()
+    {
+        if (_diskLoaded || _cacheStore is null) return;
+        lock (_gate)
+        {
+            if (_diskLoaded) return;
+            _diskLoaded = true;
+            var snap = _cacheStore.Load();
+            if (snap is { Items.Count: > 0 } && _cache is null)
+            {
+                _cache = snap.Items;
+                _cacheAt = snap.SavedAt;
+                _cacheSource = snap.Source;
+                _logger.LogInformation("Loaded {Count} news items from disk cache ({Source}, saved {SavedAt:o})",
+                    snap.Items.Count, snap.Source, snap.SavedAt);
+            }
+        }
+    }
+
+    private bool TryGetFresh(out IReadOnlyList<NewsItemDto> items)
+    {
+        lock (_gate)
+        {
+            if (_cache is not null && Now() - _cacheAt < CacheTtl)
+            {
+                items = _cache;
+                return true;
+            }
+        }
+        items = Array.Empty<NewsItemDto>();
+        return false;
     }
 
     public async Task<IReadOnlyList<NewsItemDto>> GetWorldNewsAsync(CancellationToken ct = default)
     {
-        lock (_gate)
-        {
-            if (_cache is not null && DateTimeOffset.UtcNow - _cacheAt < CacheTtl)
-                return _cache;
-        }
+        EnsureDiskCacheLoaded();
+        if (TryGetFresh(out var fresh))
+            return fresh;
 
         await _refreshLock.WaitAsync(ct);
         try
         {
-            lock (_gate)
+            if (TryGetFresh(out fresh))
+                return fresh;
+
+            IReadOnlyList<NewsItemDto>? items = null;
+            var source = "gdelt";
+
+            if (Now() >= _cooldownUntil)
+                items = await TryGdeltAsync(ct);
+
+            if ((items is null || items.Count == 0) && _rssFallback is not null && Now() - _lastRssAttempt >= RssMinInterval)
             {
-                if (_cache is not null && DateTimeOffset.UtcNow - _cacheAt < CacheTtl)
-                    return _cache;
+                _lastRssAttempt = Now();
+                try
+                {
+                    items = await _rssFallback.FetchAsync(ct);
+                    source = "rss";
+                    if (items.Count == 0)
+                        _logger.LogWarning("RSS news fallback returned no items");
+                    else
+                        _logger.LogInformation("Serving {Count} news items from RSS fallback", items.Count);
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "RSS news fallback failed");
+                    _lastError = "All news sources unavailable";
+                    items = null;
+                }
             }
 
-            if (DateTimeOffset.UtcNow < _cooldownUntil)
+            if (items is { Count: > 0 })
             {
-                var cached = SnapshotOrEmpty();
-                if (cached.Count > 0)
-                    return cached;
-                throw new HttpRequestException("GDELT upstream in cooldown after recent failures");
-            }
-
-            var wait = MinUpstreamInterval - (DateTimeOffset.UtcNow - _lastUpstream);
-            if (wait > TimeSpan.Zero)
-                await Task.Delay(wait, ct);
-
-            try
-            {
-                var client = _httpClientFactory.CreateClient(nameof(GdeltNewsService));
-                IReadOnlyList<NewsItemDto> items = Array.Empty<NewsItemDto>();
-
-                using var docJson = await TryGetJsonAsync(client, DocUrl, ct);
-                _lastUpstream = DateTimeOffset.UtcNow;
-                if (docJson is null)
-                    throw new HttpRequestException("GDELT upstream did not return valid JSON");
-                items = ParseArtList(docJson.RootElement);
-
-                if (items.Count == 0)
-                    _logger.LogWarning("GDELT upstream empty; returning no news items");
-
                 lock (_gate)
                 {
                     _cache = items;
-                    _cacheAt = DateTimeOffset.UtcNow;
+                    _cacheAt = Now();
+                    _cacheSource = source;
                 }
-                _consecutiveFailures = 0;
-                _cooldownUntil = DateTimeOffset.MinValue;
-
+                _lastError = null;
+                _cacheStore?.Save(new NewsCacheSnapshot(items, _cacheAt, source));
                 return items;
             }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _lastUpstream = DateTimeOffset.UtcNow;
-                _consecutiveFailures++;
-                var cooldown = TimeSpan.FromTicks(Math.Min(
-                    FailureCooldownMax.Ticks,
-                    FailureCooldownMin.Ticks * (1L << Math.Min(_consecutiveFailures - 1, 4))));
-                _cooldownUntil = DateTimeOffset.UtcNow + cooldown;
-                _logger.LogWarning(ex, "GDELT news fetch failed; next upstream attempt in {Cooldown}", cooldown);
-                var snapshot = SnapshotOrEmpty();
-                if (snapshot.Count > 0)
-                    return snapshot;
-                throw;
-            }
+
+            // Nothing new: serve the last good snapshot (possibly from disk) rather than failing.
+            var snapshot = SnapshotOrEmpty();
+            if (snapshot.Count > 0)
+                return snapshot;
+            throw new HttpRequestException(_lastError ?? "News upstream unavailable");
         }
         finally
         {
             _refreshLock.Release();
+        }
+    }
+
+    private async Task<IReadOnlyList<NewsItemDto>?> TryGdeltAsync(CancellationToken ct)
+    {
+        var wait = MinUpstreamInterval - (Now() - _lastUpstream);
+        if (wait > TimeSpan.Zero)
+            await Task.Delay(wait, ct);
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient(nameof(GdeltNewsService));
+            using var docJson = await TryGetJsonAsync(client, DocUrl, ct);
+            _lastUpstream = Now();
+            if (docJson is null)
+                throw new HttpRequestException("GDELT upstream did not return valid JSON");
+            var items = ParseArtList(docJson.RootElement);
+            if (items.Count == 0)
+                _logger.LogWarning("GDELT upstream empty");
+            _consecutiveFailures = 0;
+            _cooldownUntil = DateTimeOffset.MinValue;
+            return items;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _lastUpstream = Now();
+            _consecutiveFailures++;
+            var cooldown = TimeSpan.FromTicks(Math.Min(
+                FailureCooldownMax.Ticks,
+                FailureCooldownMin.Ticks * (1L << Math.Min(_consecutiveFailures - 1, 4))));
+            _cooldownUntil = Now() + cooldown;
+            _lastError = "GDELT unavailable";
+            _logger.LogWarning(ex, "GDELT news fetch failed; next upstream attempt in {Cooldown}", cooldown);
+            return null;
         }
     }
 
@@ -244,7 +337,7 @@ public sealed class GdeltNewsService : IGdeltNewsService
         return list;
     }
 
-    private static void AddItem(
+    internal static void AddItem(
         List<NewsItemDto> list,
         HashSet<string> seen,
         string title,

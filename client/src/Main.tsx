@@ -8,6 +8,7 @@ import { MainMap } from "./components/MainMap/MainMap";
 import { useSignalRConnection } from "./contexts/SignalRConnectionContext";
 import { useOrefAlerts } from "./features/oref/hooks/useOrefAlerts";
 import { OrefAlertUiProvider } from "./contexts/OrefAlertUiContext";
+import { NewsStatusNotice } from "./features/news/components/NewsStatusNotice";
 
 /** Toolbar visibility: from runtime /api/config (Docker) or build-time REACT_APP_ACTIVE_TOOLBAR (local dev). */
 function useActiveToolbar(): boolean {
@@ -90,8 +91,7 @@ export const Main: FC = () => {
             <Link href="/privacy" underline="always">Privacy</Link>
             <Link href="/terms" underline="always">Terms</Link>
           </Box>
-
-
+          <NewsStatusNotice />
         </Box>
       </Box>
       </OrefAlertUiProvider>
