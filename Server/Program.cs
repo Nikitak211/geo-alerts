@@ -123,6 +123,19 @@ builder.Services.AddHttpClient(nameof(GdeltNewsService), client =>
     client.Timeout = TimeSpan.FromSeconds(30);
     client.DefaultRequestHeaders.UserAgent.ParseAdd("geo-alerts-news/1.0");
 });
+builder.Services.AddHttpClient(RssNewsSource.HttpClientName, client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(20);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; geo-alerts-news/1.0)");
+});
+// Persistent last-good news cache (News:CachePath / News__CachePath); empty disables it.
+builder.Services.AddSingleton(sp => new NewsCacheStore(
+    builder.Configuration["News:CachePath"] ?? "/app/cache/news.json",
+    sp.GetRequiredService<ILogger<NewsCacheStore>>()));
+builder.Services.AddSingleton<IRssNewsSource>(sp => new RssNewsSource(
+    sp.GetRequiredService<IHttpClientFactory>(),
+    sp.GetRequiredService<ILogger<RssNewsSource>>(),
+    builder.Configuration.GetSection("News:RssFeeds").Get<string[]>()));
 builder.Services.AddSingleton<IGdeltNewsService, GdeltNewsService>();
 builder.Services.AddSingleton<ITelegramService, TelegramService>();
 builder.Services.AddHostedService<OrefPollingService>();

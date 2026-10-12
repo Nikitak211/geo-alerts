@@ -28,6 +28,10 @@ public sealed class NewsController : ControllerBase
     [HttpGet("me")]
     public Task<IActionResult> GetLegacyMe(CancellationToken ct) => GetInternal(ct);
 
+    /// <summary>GET /api/news/status: which source the news came from, when, and whether it is stale. Never calls upstream.</summary>
+    [HttpGet("status")]
+    public IActionResult GetStatus() => Ok(_news.GetStatus());
+
     private async Task<IActionResult> GetInternal(CancellationToken ct)
     {
         try

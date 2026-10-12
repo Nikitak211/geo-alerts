@@ -37,6 +37,7 @@ services:
       # Feature flags
       Features__EnableTelegram: "${ENABLE_TELEGRAM}"
       USE_OREF_MOCK: "${USE_OREF_MOCK}"
+      News__CachePath: /app/cache/news.json
       OREF_URL: "${OREF_URL}"
       # Toolbar: server serves this at GET /api/config. Use "true" or leave unset (defaults to false).
       App__ActiveToolbar: "${ACTIVE_TOOLBAR:-false}"
@@ -63,9 +64,14 @@ services:
     volumes:
       # Mount client-data (public/data etc.) into the container
       - ./public/data:/app/client-data:ro
+      # Persistent last-good news cache (survives container recreation)
+      - news-cache:/app/cache
       # Optional: screenshots directory
       - ./screenshots:/app/screenshots
 secrets:
   client_env:
     # Optional file with REACT_APP_* lines (gitignored). Create empty if unused.
     file: ./client/.env.production
+
+volumes:
+  news-cache:
