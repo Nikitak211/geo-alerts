@@ -2,7 +2,8 @@
 # Normal builds use context ./client or ./server so their own .dockerignore apply.
 .git
 .gitignore
-# Exclude ALL .env files. Client REACT_APP_* values come in via BuildKit secret (client_env).
+# Exclude ALL .env files. Client REACT_APP_* values come in as compose build args
+# (or an optional BuildKit secret client_env). Never COPY a real .env into the image.
 /.env
 /.env.*
 server/.env

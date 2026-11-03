@@ -6,12 +6,23 @@ COPY client/package.json client/package-lock.json ./
 COPY client/scripts ./scripts
 RUN npm ci --no-audit --no-fund
 COPY client/ ./
-# REACT_APP_* values are passed as a BuildKit secret file (not ARG/ENV), so they are never
-# stored in image layers/history. CRA still bakes them into the public JS bundle.
-# Provide with: docker compose build (see secrets: in docker-compose.yml) or
+# REACT_APP_* values are public in the CRA bundle either way.
+# The Pi deploy portal injects them as build-args (see docker-compose.yml). Those args
+# are recorded in image history; the JS bundle already contains the same values.
+# Optional: a non-empty BuildKit secret named client_env overrides the args and is not
+# stored as build-arg values:
 #   docker build --secret id=client_env,src=client/.env.production .
+ARG REACT_APP_GEOAPIFY_API_KEY=
+ARG REACT_APP_CESIUM_ION_ACCESS_TOKEN=
+ARG REACT_APP_OREF_TRAJECTORY_DEBUG=
+ARG REACT_APP_STADIA_MAPS_API_KEY=
 RUN --mount=type=secret,id=client_env,required=false \
-    if [ -f /run/secrets/client_env ]; then cp /run/secrets/client_env .env.production.local; fi && \
+    if [ -s /run/secrets/client_env ]; then \
+      cp /run/secrets/client_env .env.production.local; \
+    else \
+      printf 'REACT_APP_GEOAPIFY_API_KEY=%s\nREACT_APP_CESIUM_ION_ACCESS_TOKEN=%s\nREACT_APP_OREF_TRAJECTORY_DEBUG=%s\nREACT_APP_STADIA_MAPS_API_KEY=%s\n' \
+        "$REACT_APP_GEOAPIFY_API_KEY" "$REACT_APP_CESIUM_ION_ACCESS_TOKEN" "$REACT_APP_OREF_TRAJECTORY_DEBUG" "$REACT_APP_STADIA_MAPS_API_KEY" > .env.production.local; \
+    fi && \
     npm run build && rm -f .env.production.local
 
 # ---------- Server build stage ----------
@@ -33,6 +44,11 @@ ENV ASPNETCORE_URLS=http://0.0.0.0:8080 \
 EXPOSE 8080
 # Writable dir for the persistent news cache (mount a volume here; owned by the app user
 # so a fresh named volume inherits the ownership).
+# Pi deploy: deployd extracts sources 0640, and COPY can keep that mode. The app user
+# must still be able to read the published files. PERMFIX is referenced so changing it
+# invalidates this layer.
+ARG PERMFIX=20261102b
+RUN chmod -R a+rX /app && echo "permfix=${PERMFIX}" >/dev/null
 RUN mkdir -p /app/cache && chown $APP_UID:$APP_UID /app/cache
 # Built-in non-root user of the official .NET images (UID 1654)
 USER $APP_UID
