@@ -10,7 +10,7 @@ This project is a fullstack application for real-time geo alerts (e.g. OREF-styl
 |------|-------------|
 | `client/` | React (Create React App) front-end in TypeScript. Map UI (Leaflet + Cesium), alerts, SignalR/WebSocket. |
 | `server/` | **ASP.NET Core** (primary): `Program.cs`, `Server.csproj`, `appsettings.json`. Serves API + built client in production. Also contains the **Node.js** backend (`src/server.js`) kept for reference until migration is complete. |
-| Root | `Dockerfile` (builds client + .NET server), `docker-compose.yml` (single service + env from root `.env`). |
+| Root | `Dockerfile` (builds client + .NET server), `docker-compose.yml` (app + Postgres; env from root `.env`), `deploy.json` (Pi deploy portal). |
 
 The long-term goal is to serve both API and client from the .NET backend only.
 
@@ -97,16 +97,28 @@ The Node server in `server/src/server.js` uses `server/.env` (loaded via `dotenv
 
 ### 5. Run with Docker
 
-Docker uses the **root** `.env` file (copy from root `.env.example`). It builds the client and .NET server and runs a single container.
+Docker uses the **root** `.env` file (copy from root `.env.example`). Compose builds the client and .NET server into one container and starts Postgres 16 next to it.
 
-1. Copy the root `.env.example` to `.env` in the repo root and set at least `DATABASE_URL`. Set other variables as needed (Telegram, OREF mock, screenshot, etc.).
+1. Copy the root `.env.example` to `.env` in the repo root and set `POSTGRES_PASSWORD`. Leave `DATABASE_URL` unset to use the bundled database (database `geoalerts`, user `app`, hostname `db`). Set `DATABASE_URL` only to point at an existing Postgres instance. Put `REACT_APP_*` keys here when the production bundle needs them; Compose passes them as image build args.
 2. From the repo root:
    ```bash
    docker compose up --build
    ```
-3. The app is served on the port mapped in `docker-compose.yml` (e.g. `8080`). API and WebSocket are on the same origin (`/api/*`, `/ws`).
+3. The app is published on `127.0.0.1:8080` (`APP_PORT` / `APP_PUBLISH_HOST` in `.env` change that). API and WebSocket are on the same origin (`/api/*`, `/ws`).
 
-For database setup (schema/migrations), see `DOCKER.md`.
+`DOCKER.md` describes an older split (nginx client on port 3000 and a Node server). It is not the current Compose file.
+
+## Deploy to Pi
+
+The Raspberry Pi 5 deploy portal unpacks an uploaded zip, requires `deploy.json` at the **zip root**, and runs `docker compose` with the root `docker-compose.yml`. Caddy on the Pi routes by Host header to the published port. deployd sets `APP_PORT`; Compose binds `127.0.0.1:${APP_PORT}:8080`.
+
+Zip the repository so `deploy.json` is at the archive root, not inside a top-level folder:
+
+```bash
+git archive --format=zip -o app.zip HEAD
+```
+
+Set secrets on the portal Env page, not in the zip: `POSTGRES_PASSWORD`, and any `TELEGRAM_*` or `REACT_APP_GEOAPIFY_API_KEY`, `REACT_APP_CESIUM_ION_ACCESS_TOKEN`, `REACT_APP_OREF_TRAJECTORY_DEBUG`, `REACT_APP_STADIA_MAPS_API_KEY` values. Do not commit a real `.env`.
 
 ---
 
@@ -124,7 +136,7 @@ Do not commit real secrets; use `.env` only locally and provide secrets via envi
 
 | Scope | Purpose |
 |-------|--------|
-| Root `.env` | Docker: `DATABASE_URL`, Telegram, feature flags, screenshot, geo. |
+| Root `.env` | Docker: `POSTGRES_PASSWORD`, optional `DATABASE_URL`, `REACT_APP_*` build args, Telegram, feature flags, screenshot, geo. |
 | Client `client/.env` | API base, WebSocket URL, Geoapify key, optional Cesium Ion token, toolbar/debug flags. |
 | Server `server/.env` | Node: ports, CORS, `DATABASE_URL`, OREF mock, Telegram. .NET: overridden by env when running in Docker/shell. |
 
